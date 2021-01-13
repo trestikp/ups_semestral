@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Ellipse?>
+<?import javafx.scene.text.Font?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="graphics.LobbyListCtrl">
+   <children>
+<!--       <fx:include fx:id="status" source="status_bar.fxml"/>-->
+       <HBox minHeight="100.0" prefHeight="100.0" prefWidth="200.0">
+           <children>
+               <VBox prefHeight="200.0" prefWidth="100.0" HBox.hgrow="ALWAYS">
+                   <children>
+                       <HBox alignment="CENTER" VBox.vgrow="ALWAYS">
+                           <children>
+                               <Ellipse fx:id="clientConnectCircle" fill="RED" radiusX="5.0" radiusY="5.0" stroke="BLACK" strokeType="INSIDE" HBox.hgrow="NEVER" />
+                               <Label fx:id="clientConnectionLabel" text="Disconnected">
+                                   <padding>
+                                       <Insets left="10.0" />
+                                   </padding>
+                                   <font>
+                                       <Font size="17.0" />
+                                   </font>
+                               </Label>
+                           </children>
+                       </HBox>
+                       <HBox alignment="CENTER" VBox.vgrow="ALWAYS">
+                           <children>
+                               <Label fx:id="clientNameLabel" text="Label" visible="false">
+                                   <font>
+                                       <Font size="17.0" />
+                                   </font>
+                               </Label>
+                           </children>
+                       </HBox>
+                   </children>
+               </VBox>
+               <VBox alignment="CENTER" prefHeight="200.0" prefWidth="100.0" HBox.hgrow="ALWAYS">
+                   <children>
+                       <Label fx:id="clientStateLabel" alignment="TOP_LEFT" text="Client STATE">
+                           <font>
+                               <Font size="19.0" />
+                           </font>
+                       </Label>
+                       <Label fx:id="responseLabel">
+                           <font>
+                               <Font size="16.0" />
+                           </font>
+                       </Label>
+                   </children>
+               </VBox>
+               <VBox alignment="CENTER" prefHeight="200.0" prefWidth="100.0" visible="false" HBox.hgrow="ALWAYS">
+                   <children>
+                       <HBox alignment="CENTER" VBox.vgrow="ALWAYS">
+                           <children>
+                               <Ellipse fx:id="opponentConnectCircle" fill="DODGERBLUE" radiusX="5.0" radiusY="5.0" stroke="BLACK" strokeType="INSIDE" HBox.hgrow="NEVER" />
+                               <Label fx:id="opponentConnectionLabel" text="Label">
+                                   <padding>
+                                       <Insets left="10.0" />
+                                   </padding>
+                                   <font>
+                                       <Font size="17.0" />
+                                   </font>
+                               </Label>
+                           </children>
+                       </HBox>
+                       <HBox alignment="CENTER" VBox.vgrow="ALWAYS">
+                           <children>
+                               <Label fx:id="opponentNameLabel" text="Label">
+                                   <font>
+                                       <Font size="17.0" />
+                                   </font>
+                               </Label>
+                           </children>
+                       </HBox>
+                   </children>
+               </VBox>
+           </children></HBox>
+      <VBox prefHeight="591.0" prefWidth="1280.0" VBox.vgrow="ALWAYS">
+         <children>
+            <ScrollPane fitToHeight="true" fitToWidth="true" pannable="true" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+               <content>
+                  <VBox fx:id="lobbyHolder" alignment="TOP_CENTER" prefHeight="200.0" prefWidth="100.0" />
+               </content>
+            </ScrollPane>
+         </children></VBox>
+      <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
+         <children>
+            <Button fx:id="cancelBtn" mnemonicParsing="false" onAction="#cancel" text="Cancel">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Button>
+         </children>
+      </HBox>
+   </children>
+</VBox>
