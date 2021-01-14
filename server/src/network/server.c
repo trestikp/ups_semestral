@@ -163,4 +163,6 @@ void stop_server() {
 	close(ss);
 
 	free_controler();
+
+	exit(1);
 }

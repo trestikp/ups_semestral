@@ -99,7 +99,7 @@ public class Game {
 
     public void moveOpponentFromTo(int source, int target) {
         source = 63 - source;
-        target = 63 - source;
+        target = 63 - target;
         int vector = target - source;
 
         gameBoard[source + vector] = gameBoard[source];
@@ -118,49 +118,73 @@ public class Game {
         //7,9 - player is always "down" and gameboard starts with index 0 in the top left corner
 
         if((ret = getDirectionTarget(indexPosition, -7)) != -1) {
-            if(isSubsquent) {
-                if(ret != indexPosition - 7) {
-                    positions.add(ret);
-                    getPossibleMoves(ret, positions, true);
-                }
-            } else {
+            if(ret == (indexPosition - 2 * 7)) {
+                positions.add(ret);
+                getPossibleMoves(ret, positions, true);
+            } else if(!isSubsquent) {
                 positions.add(ret);
             }
+//            if(isSubsquent) {
+//                if(ret != indexPosition - 7) {
+//                    positions.add(ret);
+//                    getPossibleMoves(ret, positions, true);
+//                }
+//            } else {
+//                positions.add(ret);
+//            }
         }
 
         if((ret = getDirectionTarget(indexPosition, -9)) != -1) {
-            if(isSubsquent) {
-                if(ret != indexPosition - 9) {
-                    positions.add(ret);
-                    getPossibleMoves(ret, positions, true);
-                }
-            } else {
+            if(ret == (indexPosition - 2 * 9)) {
+                positions.add(ret);
+                getPossibleMoves(ret, positions, true);
+            } else if(!isSubsquent) {
                 positions.add(ret);
             }
+//            if(isSubsquent) {
+//                if(ret != indexPosition - 9) {
+//                    positions.add(ret);
+//                    getPossibleMoves(ret, positions, true);
+//                }
+//            } else {
+//                positions.add(ret);
+//            }
         }
 
         //if stone @indexPosition is a king
         if(gameBoard[indexPosition] == 3) {
             if((ret = getDirectionTarget(indexPosition, +7)) != -1) {
-                if(isSubsquent) {
-                    if(ret != indexPosition + 7) {
-                        positions.add(ret);
-                        getPossibleMoves(ret, positions, true);
-                    }
-                } else {
+                if(ret == (indexPosition + 2 * 7)) {
+                    positions.add(ret);
+                    getPossibleMoves(ret, positions, true);
+                } else if(!isSubsquent) {
                     positions.add(ret);
                 }
+//                if(isSubsquent) {
+//                    if(ret != indexPosition + 7) {
+//                        positions.add(ret);
+//                        getPossibleMoves(ret, positions, true);
+//                    }
+//                } else {
+//                    positions.add(ret);
+//                }
             }
 
             if((ret = getDirectionTarget(ret, +9)) != -1) {
-                if(isSubsquent) {
-                    if(ret != indexPosition + 9) {
-                        positions.add(ret);
-                        getPossibleMoves(ret, positions, true);
-                    }
-                } else {
+                if(ret == (indexPosition + 2 * 9)) {
+                    positions.add(ret);
+                    getPossibleMoves(ret, positions, true);
+                } else if(!isSubsquent) {
                     positions.add(ret);
                 }
+//                if(isSubsquent) {
+//                    if(ret != indexPosition + 9) {
+//                        positions.add(ret);
+//                        getPossibleMoves(ret, positions, true);
+//                    }
+//                } else {
+//                    positions.add(ret);
+//                }
             }
         }
     }
@@ -210,6 +234,10 @@ public class Game {
 
     public ArrayList<Integer> getOpponentJumpedOver() {
         return opponentJumpedOver;
+    }
+
+    public boolean canMoveAgain(int from, int to) {
+        return (to - from) == 2 * -7 || (to - from) == 2 * -9 || (to - from == 2 * 7 || (to - from) == 2 * 9);
     }
 
     //FUCK IT, BRUTE FORCE TIME

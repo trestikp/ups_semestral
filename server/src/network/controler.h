@@ -15,7 +15,7 @@
 typedef enum {
 	INST_ERROR	= -1,
 	CONNECT 	= 0,
-	QUICK_PLAY	= 1,
+	//QUICK_PLAY	= 1,
 	LOBBY		= 2,
 	CREATE_LOBBY	= 3,
 	JOIN_GAME 	= 4,
@@ -23,7 +23,7 @@ typedef enum {
 	PAUSE_INST	= 6,
 	RESUME 		= 7,
 	PING 		= 8,
-	CANCEL_QUICK	= 9,
+	//CANCEL_QUICK	= 9,
 	DISCONNECT	= 10,
 	DELETE_LOBBY	= 11,
 	OPPONENT_JOIN	= 12,

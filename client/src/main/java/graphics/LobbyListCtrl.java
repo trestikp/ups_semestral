@@ -55,7 +55,7 @@ public class LobbyListCtrl extends OverlordCtrl implements CtrlNecessities {
     public void cancel(ActionEvent actionEvent) {
         if(client.getAutomaton().validateTransition(Action.CANCEL)) {
             client.getAutomaton().makeTransition(Action.CANCEL);
-            genericSetScene("main_menu_connect_v2.fxml");
+            genericSetScene("main_menu_connected.fxml");
         } else {
             responseLabel.setText("Automaton: transition validation failed");
 //            statusController.responseLabel.setText("Automaton: transition validation failed");

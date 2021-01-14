@@ -2,12 +2,8 @@ package game;
 
 import graphics.*;
 import javafx.application.Platform;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
@@ -15,8 +11,6 @@ import network.Instruction;
 import network.TcpConnection;
 import network.TcpMessage;
 
-import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 public class Client implements Runnable {
@@ -146,7 +140,6 @@ public class Client implements Runnable {
         switch (inst) {
             case CONNECT: sendConnect(); break;
             case DISCONNECT: sendDisconnect(); break;
-            case QUICK_PLAY: sendQuickPlay(); break;
             case CREATE_LOBBY: rv = sendCreateLobby(); break;
             case DELETE_LOBBY: sendDeleteLobby(); break;
             case JOIN_GAME: rv = sendJoinGame(); break;
@@ -162,7 +155,6 @@ public class Client implements Runnable {
         switch (inst) {
             case CONNECT: handleConnect(reply); break;
             case DISCONNECT: handleDisconnect(reply); break;
-            case QUICK_PLAY: handleQuickPlay(reply); break;
             case CREATE_LOBBY: handleCreateLobby(reply); break;
             case DELETE_LOBBY: handleDeleteLobby(reply); break;
             case JOIN_GAME: handleJoinGame(reply); break;
@@ -207,10 +199,15 @@ public class Client implements Runnable {
                 }
 
                 Platform.runLater(() -> {
-                    ((GameboardCtrl_v2) currentCtrl).moveOpponentStones(msg.getParams());
-                    ((GameboardCtrl_v2) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
+                    if(!game.getOpponentJumpedOver().isEmpty()) {
+                        ((GameboardCtrl) currentCtrl).removeStones(game.getOpponentJumpedOver());
+                    }
+
+                    ((GameboardCtrl) currentCtrl).moveOpponentStones(msg.getParams());
+                    ((GameboardCtrl) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
                 });
 
+                game.printGameBoard();
                 auto.makeTransition(Action.TURN);
                 sendReply(true);
             } else {
@@ -267,17 +264,6 @@ public class Client implements Runnable {
         sb.append(clientID);
         sb.append("|");
         sb.append(Instruction.DISCONNECT.getName());
-        sb.append('\n');
-
-        connection.sendMessageTxt(sb.toString());
-    }
-
-    private void sendQuickPlay() {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(clientID);
-        sb.append("|");
-        sb.append(Instruction.QUICK_PLAY.getName());
         sb.append('\n');
 
         connection.sendMessageTxt(sb.toString());
@@ -398,7 +384,7 @@ public class Client implements Runnable {
                 auto.makeTransition(Action.CONNECT);
 
                 Platform.runLater(() -> {
-                    currentCtrl.genericSetScene("main_menu_connect_v2.fxml");
+                    currentCtrl.genericSetScene("main_menu_connected.fxml");
                     status.setResponseText(reply.getResponseText());
                 });
             } else {
@@ -420,65 +406,11 @@ public class Client implements Runnable {
                 clientID = 0;
 
                 Platform.runLater(() -> {
-                    currentCtrl.genericSetScene("main_menu_disconnect_v2.fxml");
+                    currentCtrl.genericSetScene("main_menu_disconnected.fxml");
                     status.setResponseText(reply.getResponseText());
                 });
             } else {
                 status.setResponseText("Automaton validation failed");
-            }
-        } else if(reply.getInst() == Instruction.ERROR) {
-            status.setResponseText(reply.getResponseText());
-        } else {
-            status.setResponseText("Unknown response");
-        }
-    }
-
-    private void handleQuickPlay(TcpMessage reply) {
-        if(reply.getInst() == Instruction.OK) {
-            if(reply.getResponseCode() == 201) {
-                if(auto.validateTransition(Action.WAIT)) {
-                    auto.makeTransition(Action.WAIT);
-
-                    Platform.runLater(() -> {
-                        currentCtrl.genericSetScene("waiting.fxml");
-                        status.setResponseText(reply.getResponseText());
-                    });
-                } else {
-                    status.setResponseText("Automaton validation failed");
-                }
-            } else if(reply.getResponseCode() == 202) {
-                if(reply.getParams().length == 2) {
-                    if(reply.getParams()[0].equals("player")) {
-                        if(auto.validateTransition(Action.START_I)) {
-                            auto.makeTransition(Action.START_I);
-
-                            game = new Game(PSColor.WHITE);
-
-                            initGUIBoard(reply);
-                        } else {
-                            status.setResponseText("Automaton validation failed");
-                        }
-                    } else if(reply.getParams()[0].equals("opponent")) {
-                        if(auto.validateTransition(Action.START_O)) {
-                            auto.makeTransition(Action.START_O);
-
-                            game = new Game(PSColor.BLACK);
-
-                            initGUIBoard(reply);
-
-                            Platform.runLater(() -> {
-                                ((GameboardCtrl_v2) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
-                            });
-                        } else {
-                            status.setResponseText("Automaton validation failed");
-                        }
-                    } else {
-                        status.setResponseText("Invalid parameter, continuing..");
-//                        return;
-                    }
-                } else {
-                    status.setResponseText("Unexpected parameter count");
-                }
             }
         } else if(reply.getInst() == Instruction.ERROR) {
             status.setResponseText(reply.getResponseText());
@@ -510,7 +442,7 @@ public class Client implements Runnable {
         if(reply.getInst() == Instruction.OK) {
             if(auto.validateTransition(Action.CANCEL)) {
                 Platform.runLater(() -> {
-                    currentCtrl.genericSetScene("main_menu_connect_v2.fxml");
+                    currentCtrl.genericSetScene("main_menu_connected.fxml");
                     status.setResponseText(reply.getResponseText());
                 });
 
@@ -559,21 +491,13 @@ public class Client implements Runnable {
         if(reply.getInst() == Instruction.OK) {
             if(reply.getParams().length == 1) {
                 if (auto.validateTransition(Action.START_O)) {
-                    Platform.runLater(() -> {
-                        currentCtrl.genericSetScene("gameboard_v2.fxml");
-                        status.setResponseText(reply.getResponseText());
-                    });
-
                     auto.makeTransition(Action.START_O);
 
                     game = new Game(PSColor.BLACK);
                     opponentName = reply.getParams()[0];
                     opponentConnected = true;
 
-                    Platform.runLater(() -> {
-                        status.opponentNameLabel.setText("Opponent: " + opponentName);
-                        setOpponentVisible();
-                    });
+                    initGUIBoard(reply);
                 } else {
                     status.setResponseText("Automaton validation failed");
                 }
@@ -612,11 +536,11 @@ public class Client implements Runnable {
 
                 Platform.runLater(() -> {
                     if(!game.getJumpedOver().isEmpty()) {
-                        ((GameboardCtrl_v2) currentCtrl).removeStones(game.getJumpedOver());
+                        ((GameboardCtrl) currentCtrl).removeStones(game.getJumpedOver());
                     }
 
-                    ((GameboardCtrl_v2) currentCtrl).moveStone();
-                    ((GameboardCtrl_v2) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
+                    ((GameboardCtrl) currentCtrl).moveStone();
+                    ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
                 });
 
                 game.printGameBoard();
@@ -627,8 +551,8 @@ public class Client implements Runnable {
             status.setResponseText(reply.getResponseText());
 
             Platform.runLater(() -> {
-                ((GameboardCtrl_v2) currentCtrl).resetMoveSequence();
-                ((GameboardCtrl_v2) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
+                ((GameboardCtrl) currentCtrl).resetMoveSequence();
+                ((GameboardCtrl) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
             });
         } else {
             status.setResponseText("Unknown response");
@@ -715,10 +639,8 @@ public class Client implements Runnable {
                 status.clientConnectCircle.setStyle("-fx-fill: #00FF00");
                 status.clientConnectionLabel.setText("Connected");
             }
-//
-//            if(username == null) {
-//                status.clientNameLabel.setVisible(false);
-//            }
+
+            status.clientNameLabel.setVisible(username != null);
 
             if(auto != null && auto.getGameState() != null) {
                 status.clientStateLabel.setText("State: " + auto.getGameState().getName());
@@ -785,11 +707,11 @@ public class Client implements Runnable {
     private void initGUIBoard(TcpMessage reply) {
         Platform.runLater(() -> {
             currentCtrl.genericSetScene("gameboard_v2.fxml");
-            ((GameboardCtrl_v2) currentCtrl).initStones();
+            ((GameboardCtrl) currentCtrl).initStones();
             status.setResponseText(reply.getResponseText());
         });
 
-        opponentName = reply.getParams()[1];
+        opponentName = reply.getParams()[0];
         opponentConnected = true;
 
         Platform.runLater(() -> {

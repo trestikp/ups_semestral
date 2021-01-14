@@ -12,13 +12,13 @@ public class aboutCtrl {
         FXMLLoader loader;
         Parent pane;
 
-        loader = new FXMLLoader(getClass().getResource("/fxml_res/main_menu_disconnect_v2.fxml"));
+        loader = new FXMLLoader(getClass().getResource("/fxml_res/main_menu_disconnected.fxml"));
 
         try {
             pane = loader.load();
         } catch (IOException e) {
             //TODO: logger
-            System.out.println("Failed to load fxml: main_menu_disconnect_v2.fxml");
+            System.out.println("Failed to load fxml: main_menu_disconnected.fxml");
             return;
         }
 

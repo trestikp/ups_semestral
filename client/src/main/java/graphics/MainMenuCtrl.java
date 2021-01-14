@@ -1,5 +1,6 @@
 package graphics;
 
+import game.Action;
 import game.Client;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -9,37 +10,63 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.shape.Ellipse;
 import network.Instruction;
 import network.TcpConnection;
 
 import java.io.IOException;
 
-public class MainMenuCtrl {
-    private boolean connected = false;
-    private Client client;
+//public class MainMenuCtrl_v2 implements CtrlNecessities {
+public class MainMenuCtrl extends OverlordCtrl implements CtrlNecessities {
+//    private Client client;
 
-    //disconnected
-    public Button connectBtn;
 
-    //connected
-    public Button playBtn;
+//    public HBox status;
+//    @FXML
+//    private StatusBarCtrl statusController;
+
+    public Ellipse clientConnectCircle;
+    public Label responseLabel;
+    public Label clientStateLabel;
+    public Label clientNameLabel;
+    public Label clientConnectionLabel;
+    public Ellipse opponentConnectCircle;
+    public Label opponentConnectionLabel;
+    public Label opponentNameLabel;
+
+    public Button quickPlayBtn;
+    public Button joinLobbyBtn;
+    public Button createLobbyBtn;
     public Button disconnectBtn;
-
-    //common
     public Button quitBtn;
+
+    //disconnected buttons
+    public Button connect;
     public Button aboutBtn;
-    public AnchorPane mainMenuPane;
+
+
+    private Button[] btnArray = new Button[]{quickPlayBtn, joinLobbyBtn, createLobbyBtn, disconnectBtn, quitBtn};
+
+    public VBox mainMenuPane;
 
     @FXML
     public void initialize() {
-        mainMenuPane.widthProperty().addListener(change -> resizeWindow());
-        mainMenuPane.heightProperty().addListener(change -> resizeWindow());
+//        mainMenuPane.widthProperty().addListener(change -> resizeWindow());
+//        mainMenuPane.heightProperty().addListener(change -> resizeWindow());
 
         client = Handler.getClient();
-        connected = client.getConnection() != null;
 
-//        System.out.println("Initialized MainContorler with game ID: " + client.getGame().getId());
+//        setClient(client, statusController);
+
+        setClient(client);
+
+//        StatusBar status = new StatusBar(clientConnectCircle, responseLabel, clientStateLabel, clientNameLabel,
+//                            clientConnectionLabel, opponentConnectCircle, opponentConnectionLabel, opponentNameLabel);
+//        setClient(client, status);
     }
 
     private void resizeWindow() {
@@ -47,81 +74,30 @@ public class MainMenuCtrl {
         double height = mainMenuPane.getHeight();
 
         double buttonHeight = height * 0.05;
-        if(buttonHeight < 36) buttonHeight = 36; //it looks bad when its smaller
+        double buttonWidth = width * 0.25;
 
-        double buttonHeightOffset = buttonHeight * 0.5;
-        double inc = height / (mainMenuPane.getChildren().size() + 1);
+        if(buttonHeight < quickPlayBtn.getPrefHeight()) buttonHeight = 36;
+        if(buttonWidth < quickPlayBtn.getPrefWidth()) buttonWidth = 300;
 
-        for(int i = 0; i < mainMenuPane.getChildren().size(); i++) {
-            Node n = mainMenuPane.getChildren().get(i);
-
-            AnchorPane.setLeftAnchor(n, width * 0.25);
-            AnchorPane.setRightAnchor(n, width * 0.25);
-            AnchorPane.setTopAnchor(n, inc * (i + 1) - buttonHeightOffset);
-            AnchorPane.setBottomAnchor(n, height - (inc * (i + 1)) - buttonHeightOffset);
+        for(Node n : mainMenuPane.getChildren()) {
+            for(Button b : btnArray) {
+                if(n.getId().equals(b.getId())) {
+                    n.resize(buttonWidth, buttonHeight);
+                }
+            }
         }
     }
 
-    public void connect(ActionEvent actionEvent) {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml_res/connection_picker.fxml"));
-        Parent pane;
-
-        try {
-            pane = loader.load();
-        } catch (IOException e) {
-            //TODO: logger
-            System.out.println("Failed to load fxml");
-            return;
-        }
-
-        ((ConnectionPickerCtrl) loader.getController()).setClient(client);
-//        client.setPickerCtrl(loader.getController());
-
-        Handler.setScene(new Scene(pane, Handler.getPrimaryStage().getWidth(), Handler.getPrimaryStage().getHeight()));
-    }
-
-    public void play(ActionEvent actionEvent) {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml_res/gameboard.fxml"));
-        Parent pane;
-
-        try {
-            pane = loader.load();
-        } catch (IOException e) {
-            //TODO: logger
-            System.out.println("Failed to load fxml");
-            e.printStackTrace();
-            return;
-        }
-
-        Handler.setScene(new Scene(pane, Handler.getPrimaryStage().getWidth(), Handler.getPrimaryStage().getHeight()));
-
-//        client.getGame().setGBCtrl(loader.getController());
-    }
-
-    public void disconnect(ActionEvent actionEvent) {
-        //TODO: connection handling
-
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml_res/main_menu_disconnected.fxml"));
-        Parent pane;
-
-        try {
-            pane = loader.load();
-        } catch (IOException e) {
-            //TODO: logger
-            System.out.println("Failed to load fxml");
-            return;
-        }
-        
-        client.setInstruction(Instruction.DISCONNECT);
-
-        Handler.setScene(new Scene(pane, Handler.getPrimaryStage().getWidth(), Handler.getPrimaryStage().getHeight()));
-
-        connected = false;
+    @Override
+    public void setClient(Client client) {
+//        setClient(client, statusController);
+        StatusBar status = new StatusBar(clientConnectCircle, responseLabel, clientStateLabel, clientNameLabel,
+                clientConnectionLabel, opponentConnectCircle, opponentConnectionLabel, opponentNameLabel);
+        setClient(client, status);
     }
 
     public void about(ActionEvent actionEvent) {
-//        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml_res/about.fxml"));
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml_res/main_menu_connect_v2.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml_res/about.fxml"));
         Parent pane;
 
         try {
@@ -131,35 +107,65 @@ public class MainMenuCtrl {
             System.out.println("Failed to load fxml");
             return;
         }
-//
-//        System.out.println("Main menu is " + (connected ? "connected" : "disconnected"));
-//
-//        ((aboutCtrl) loader.getController()).setConnected(connected);
 
         Handler.setScene(new Scene(pane, Handler.getPrimaryStage().getWidth(), Handler.getPrimaryStage().getHeight()));
     }
 
-    public void setMainMenuScene(TcpConnection connection) {
-        if(connected) {
+    public void connect(ActionEvent actionEvent) {
+        genericSetScene("connection_picker.fxml");
 
+        if(client.getAutomaton().validateTransition(Action.CONNECT)) {
+            client.getAutomaton().makeTransition(Action.CONNECT);
         } else {
-
+            responseLabel.setText("Invalid automaton transition");
+//            statusController.responseLabel.setText("Invalid automaton transition");
         }
+//        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml_res/connection_picker.fxml"));
+//        Parent pane;
+//
+//        try {
+//            pane = loader.load();
+//        } catch (IOException e) {
+//            //TODO: logger
+//            System.out.println("Failed to load fxml");
+//            return;
+//        }
+//
+//        ((CtrlNecessities) loader.getController()).setClient(client);
+//
+//        Handler.setScene(new Scene(pane, Handler.getPrimaryStage().getWidth(), Handler.getPrimaryStage().getHeight()));
+    }
+
+    public void disconnect(ActionEvent actionEvent) {
+        client.setInstruction(Instruction.DISCONNECT);
     }
 
     public void quit(ActionEvent actionEvent) {
-        Platform.exit();
-    }
+        if(client.isClientConnected()) {
+            client.setInstruction(Instruction.DISCONNECT);
+        } else {
+            if(client.getAutomaton().validateTransition(Action.QUIT)) {
+                client.getAutomaton().makeTransition(Action.QUIT);
+            } else {
+                responseLabel.setText("Invalid automaton transition");
+//                statusController.responseLabel.setText("Invalid automaton transition");
+            }
 
-    public void setConnected(boolean connected) {
-        this.connected = connected;
+            Platform.exit();
+        }
     }
 
     public void createLobby(ActionEvent actionEvent) {
-
+        if(client.getAutomaton().validateTransition(Action.CREATE)) {
+            client.getAutomaton().makeTransition(Action.CREATE);
+            genericSetScene("lobby_creation.fxml");
+        } else {
+            responseLabel.setText("Automaton: transition validation failed");
+//            statusController.responseLabel.setText("Automaton: transition validation failed");
+        }
     }
 
     public void joinLobby(ActionEvent actionEvent) {
-
+        client.setInstruction(Instruction.LOBBY);
     }
 }

@@ -3,35 +3,57 @@ package graphics;
 import game.Action;
 import game.Client;
 import javafx.event.ActionEvent;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
+import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.shape.Ellipse;
 import network.Instruction;
-import network.TcpConnection;
-import network.TcpMessage;
 
-import java.io.IOException;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
 
-public class ConnectionPickerCtrl {
-    private Client client;
+public class ConnectionPickerCtrl extends OverlordCtrl implements CtrlNecessities {
+//    private Client client;
 
     private String host;
     private int port;
     private String username;
 
-    public Label ip_error_label;
-    public TextField ip_input;
-    public Label port_error_label;
-    public TextField port_input;
-    public Label username_error_label;
-    public TextField username_input;
+    public TextField ipInputTF;
+    public TextField portInputTF;
+    public TextField usernameInputTF;
+
+    public Button connectBtn;
+    public Button cancelBtn;
+
+    public Label ipErrorLbl;
+    public Label portErrorLbl;
+    public Label usernameErrorlbl;
+
+    //status
+//    public HBox status;
+//    @FXML
+//    public StatusBarCtrl statusController;
+
+    public Ellipse clientConnectCircle;
+    public Label responseLabel;
+    public Label clientStateLabel;
+    public Label clientNameLabel;
+    public Label clientConnectionLabel;
+    public Ellipse opponentConnectCircle;
+    public Label opponentConnectionLabel;
+    public Label opponentNameLabel;
+
 
     public void setClient(Client client) {
-        this.client = client;
+//        setClient(client, statusController);
+        StatusBar status = new StatusBar(clientConnectCircle, responseLabel, clientStateLabel, clientNameLabel,
+                clientConnectionLabel, opponentConnectCircle, opponentConnectionLabel, opponentNameLabel);
+        setClient(client, status);
+
+//        client.setStatusElements(clientConnectCircle, clientConnectionLabel, clientNameLabel, clientStateLabel,
+//                                 responseLabel, opponentConnectCircle, opponentConnectionLabel, opponentNameLabel);
+//        client.updateStatusElements();
     }
 
     private boolean validateInputs(String ip, String port, String username) {
@@ -56,60 +78,61 @@ public class ConnectionPickerCtrl {
             int b = Integer.parseInt(port);
             if(b < 0 || b > 65336) throw new NumberFormatException();
 
-            port_error_label.setVisible(false);
+            portErrorLbl.setVisible(false);
 
             portGood = true;
         }catch (NumberFormatException e) {
-            port_error_label.setText("Entered value is invalid. Expecting value 1-65536");
-            port_error_label.setStyle("-fx-text-fill: #FF0000");
-            port_error_label.setVisible(true);
+            portErrorLbl.setText("Entered value is invalid. Expecting value 1-65536");
+//            portErrorLbl.setStyle("-fx-text-fill: #FF0000");
+            portErrorLbl.setVisible(true);
 
             portGood = false;
         }
 
-        nameGood = true;
+        if(username.isBlank()) {
+            nameGood = false;
+
+            usernameErrorlbl.setText("Please enter a username");
+            usernameErrorlbl.setVisible(true);
+        } else {
+            nameGood = true;
+            usernameErrorlbl.setVisible(false);
+        }
 
         return (ipGood && portGood && nameGood);
     }
 
     public void connect(ActionEvent actionEvent) {
-        if(validateInputs(ip_input.getText(), port_input.getText(), username_input.getText())) {
-            host = ip_input.getText();
-            port = Integer.parseInt(port_input.getText());
-            username = username_input.getText();
+        if(validateInputs(ipInputTF.getText(), portInputTF.getText(), usernameInputTF.getText())) {
+            host = ipInputTF.getText();
+            port = Integer.parseInt(portInputTF.getText());
+            username = usernameInputTF.getText();
 
             client.setUsername(username);
+            client.setHost(host);
+            client.setPort(port);
+
+            client.establishConnection();
+
             client.setInstruction(Instruction.CONNECT);
         } else {
-            //TODO: ?? do something on invalid input??
+            if(client.getAutomaton().validateTransition(Action.INVALID_IN)) {
+                client.getAutomaton().makeTransition(Action.INVALID_IN);
+            } else {
+                responseLabel.setText("Invalid automaton transition");
+//                statusController.responseLabel.setText("Invalid automaton transition");
+            }
         }
     }
 
     public void cancel(ActionEvent actionEvent) {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml_res/main_menu_disconnected.fxml"));
-        Parent pane;
+        genericSetScene("main_menu_disconnected.fxml");
 
-        try {
-            pane = loader.load();
-        } catch (IOException e) {
-            //TODO: logger
-            System.out.println("Failed to load fxml");
-            return;
+        if(client.getAutomaton().validateTransition(Action.CANCEL)) {
+            client.getAutomaton().makeTransition(Action.CANCEL);
+        } else {
+            responseLabel.setText("Invalid automaton transition");
+//            statusController.responseLabel.setText("Invalid automaton transition");
         }
-
-        Handler.setScene(new Scene(pane, Handler.getPrimaryStage().getWidth(), Handler.getPrimaryStage().getHeight()));
-//        Handler.setSceneFromPath("/fxml_res/main_menu_disconnected.fxml");
-    }
-
-    public String getHost() {
-        return host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public String getUsername() {
-        return username;
     }
 }

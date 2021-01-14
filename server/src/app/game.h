@@ -27,4 +27,7 @@ int validate_move(int from, int to, player* p, game* g);
 void make_move(int from, int to, player* p, game* g);
 void free_game(game* g);
 
+
+void print_gameboard(game* g);
+
 #endif

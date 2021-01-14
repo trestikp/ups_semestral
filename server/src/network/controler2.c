@@ -13,7 +13,6 @@
 extern int additionalActions;
 
 l_link* p_list = NULL;
-game* quick_g = NULL;
 l_link* g_lobby = NULL;
 l_link* g_playing = NULL;
 
@@ -63,14 +62,6 @@ void print_playing() {
 		printf("p1: %s\n", ((game*) temp->data)->p1 ? ((game*) temp->data)->p1->username : "NULL");
 		printf("p2: %s\n", ((game*) temp->data)->p2 ? ((game*) temp->data)->p2->username : "NULL");
 		temp = temp->next;
-	}
-}
-
-void print_quick() {
-	if(quick_g) {
-		printf("gamestate: %d\n", quick_g->gamestate);
-		printf("p1: %s\n", quick_g->p1 ? quick_g->p1->username : "NULL");
-		printf("p2: %s\n", quick_g->p2 ? quick_g->p2->username : "NULL");
 	}
 }
 
@@ -159,12 +150,8 @@ instruction parse_instruction(char* str) {
 		inst = PING;
 	} else if(!strcmp(str, "TURN")) {
 		inst = TURN;
-	} else if(!strcmp(str, "QUICK_PLAY")) {
-		inst = QUICK_PLAY;
 	} else if(!strcmp(str, "LOBBY")) {
 		inst = LOBBY;
-	} else if(!strcmp(str, "CANCEL_QUICK")) {
-		inst = CANCEL_QUICK;
 	} else if(!strcmp(str, "DELETE_LOBBY")) {
 		inst = DELETE_LOBBY;
 	} else if(!strcmp(str, "CREATE_LOBBY")) {
@@ -198,8 +185,8 @@ int validate_instruction(instruction inst, int token_cnt) {
 	}
 	
 	switch(inst) {
-		case QUICK_PLAY: case PAUSE_INST: case RESUME: case LOBBY:
-		case PING: case CANCEL_QUICK: case OPPONENT_JOIN: case OPPONENT_TURN:
+		case PAUSE_INST: case RESUME: case LOBBY:
+		case PING: case OPPONENT_JOIN: case OPPONENT_TURN:
 		case DELETE_LOBBY: case DISCONNECT:  params = 0; break;
 		case CONNECT: case CREATE_LOBBY: case JOIN_GAME: params = 1; break;
 		case TURN: params = 30; break;
@@ -382,88 +369,6 @@ char* connect_my(int* player_id, char* username, int fd) {
 }
 
 
-/**
-	Adds player to an available game or creates a new game for the player
-	waiting for an opponent
-*/
-char* quick_play(player* p) {
-	//TODO: check if player isn't alrady in game!
-
-	if(quick_g) {
-		if(get_gamestate(quick_g) == WAITING) {
-			printf("Joining an existing game!\n");
-
-			if(add_player_to_game(quick_g, p)) {
-				printf("Two players already exist in game!");
-				printf("Game is in wrong state\n");
-
-				//return construct_message(player_id, 402,
-				return construct_message(p->id, 402, "Game already full");
-				//return 400;
-			}
-
-			change_game_state(quick_g, START_GAME);
-
-			/*
-			char* msg = construct_message(p->id, 202, "Joined quick game");
-
-			//TODO who begins? (random %2) "player" : "opponent"
-			append_parameter(&msg, "opponent");
-			p->onTop = 1;
-			append_parameter(&msg, quick_g->p1->username);
-			*/
-
-			/////contact player
-			char* op_msg = construct_message_with_inst(quick_g->p1->id, inst_string[OPPONENT_JOIN],
-								   201, "Opponent connected");
-			append_parameter(&op_msg, "player");
-			append_parameter(&op_msg, p->username);
-
-			int  rv = contact_player(quick_g->p1->socket, p->id, quick_g->p1->id, op_msg);
-
-			if(rv == 3 || rv == 0) {
-				char* msg = construct_message(p->id, 202, "Starting quick game");
-
-				append_parameter(&msg, "opponent");
-				p->onTop = 1;
-				append_parameter(&msg, quick_g->p1->username);
-
-				add_lifo(&g_playing, quick_g);
-				quick_g = NULL;
-
-				return msg;
-			} else {
-				return construct_message(p->id, 405, "Failed to contact opponent");
-			}
-		} else {
-			//maybe TODO some state error checking? of existing game
-
-			//return construct_message(player_id, 403,
-			return construct_message(p->id, 403,
-					      "Existing quick game in wrong state");
-		}
-	} else {
-		printf("Creating new game\n");
-
-		quick_g = init_new_game();
-		if(!quick_g) {
-			printf("Failed to init new game\n");
-
-			//return construct_message(player_id, 404,
-			return construct_message(p->id, 404,
-					      "Server failed to start quick game");
-			//return 400;
-		}
-
-		add_player_to_game(quick_g, p);
-	}
-	
-	//return construct_message(player_id, 201,
-	return construct_message(p->id, 201, "Created quick game");
-	//return 200;
-}
-
-
 char* lobby(player* p) {
 	char* msg = NULL;
 	l_link* temp = g_lobby;
@@ -504,15 +409,15 @@ char* create_lobby(player* p, char* lobby_name) {
 	if(!g) {
 		printf("Failed to init new game\n");
 
-		return construct_message(p->id, 404,
-				      "Server failed to start quick game");
+		return construct_message(p->id, 402,
+				      "Server failed to create lobby");
 	}
 
 	p->busy = 1;
 
 	//This will be handled on client input so theorethically shouldn't occur
 	if(strlen(lobby_name) > 127) {
-		return construct_message(p->id, 405, "Lobby name is too long");
+		return construct_message(p->id, 403, "Lobby name is too long");
 	}
 
 	strcpy(g->gamename, lobby_name);
@@ -525,31 +430,8 @@ char* create_lobby(player* p, char* lobby_name) {
 }
 
 
-char* cancel_quick(player* p) {
-	if(!quick_g) {
-		return NULL;
-	}
-
-	if(quick_g->p1 != p) {
-		printf("Player mismatch on game cancel %p != %p", quick_g->p1, p);
-		//return construct_message(p->id, 402, "You aren't queued for quick game");
-		return NULL;
-	}
-
-	p->busy = 0;
-	free(quick_g);
-	quick_g = NULL;
-
-	return construct_message(p->id, 201, "Game canceled");
-}
-
 char* delete_lobby(player* p) {
 	l_link *prev = NULL, *curr = NULL;
-	char* msg = NULL;
-
-	if((msg = cancel_quick(p))) {
-		return msg;
-	}
 
 	curr = g_lobby;
 
@@ -640,6 +522,8 @@ char* join_game(player* p, char* lobby_name) {
 	p->busy = 1;
 	p->onTop = 1;
 
+	g->p2 = p;
+
 	add_lifo(&g_playing, g);
 
 	char* op_msg = construct_message_with_inst(g->p1->id, inst_string[OPPONENT_JOIN], 201,
@@ -703,6 +587,10 @@ char* turn(player* p, char* parts[32], int parts_count) {
 
 	for(i = 1; i < parts_count; i++) {
 		if(validate_move(pars[i - 1], pars[i], p, g)) {
+			printf("Failed verify move from %d to %d\n", pars[i - 1], pars[i]);
+
+			print_gameboard(g);
+			//validate_move(pars[i - 1], pars[i], p, g);
 			return construct_message(p->id, 404, "Failed to validate move");
 		}
 	}
@@ -711,8 +599,12 @@ char* turn(player* p, char* parts[32], int parts_count) {
 		make_move(pars[i - 1], pars[i], p, g);
 	}
 
+
+	print_gameboard(g);
+
 	//TODO inform opponent, send moves
 	int rv; 
+
 
 	if(g->p1 == p) {
 		char* op_msg = construct_message_with_inst(g->p2->id, inst_string[OPPONENT_TURN], 201, "Opponent moved");
@@ -723,6 +615,7 @@ char* turn(player* p, char* parts[32], int parts_count) {
 
 			append_parameter(&op_msg, num);
 		}
+		printf("Contanting opponent\n");
 
 		//send(g->p2->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
 
@@ -737,6 +630,8 @@ char* turn(player* p, char* parts[32], int parts_count) {
 
 			append_parameter(&op_msg, num);
 		}
+
+	printf("Contanting opponent\n");
 
 		//send(g->p1->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
 
@@ -877,11 +772,9 @@ char* handle_message(char *message, int fd) {
 	}
 
 	switch(inst) {
-		case QUICK_PLAY: reply = quick_play(p); break; //TODO: start game
 		case LOBBY: reply = lobby(p); break;
 		case CREATE_LOBBY: reply = create_lobby(p, parts[2]); break;
 		case JOIN_GAME: reply = join_game(p, parts[2]); break;
-		case CANCEL_QUICK: reply = cancel_quick(p); break;
 		case DELETE_LOBBY: reply = delete_lobby(p); break;
 		case PAUSE_INST: reply = pause_game(p); break;
 		case RESUME: reply = resume_game(p); break;
@@ -891,16 +784,16 @@ char* handle_message(char *message, int fd) {
 		case PING: reply = ping(p); break;
 	}
 
+	/*
 	printf("\n------------------------------\n");
 	printf("PRINTING PLAYER LIST\n");
 	print_plist();
-	printf("\nPRINTING QUICK GAME\n");
-	print_quick();
 	printf("\nPRINTING LOBBY\n");
 	print_lobby();
 	printf("\nPRINTING PLAYING\n");
 	print_playing();
 	printf("\n==============================\n");
+	*/
 
 	//NULL is a "valid" reply - disconnects user	
 	return reply;
@@ -939,6 +832,4 @@ void free_controler() {
 		free(temp);
 		temp = g_playing;
 	}
-
-	if(quick_g) free(quick_g);
 }

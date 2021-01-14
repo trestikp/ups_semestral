@@ -1,13 +1,10 @@
 package graphics;
 
 import game.Client;
-import game.Game;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-
-import java.io.IOException;
 
 public class Handler {
     private static Stage primaryStage;
@@ -20,7 +17,7 @@ public class Handler {
         client.start();
         //TODO: join threads
 
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml_res/main_menu_disconnect_v2.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml_res/main_menu_disconnected.fxml"));
 //        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml_res/template.fxml"));
         Parent root = loader.load();
 

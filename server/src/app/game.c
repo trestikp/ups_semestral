@@ -103,6 +103,8 @@ game* extract_game_by_name(l_link** head, char* lobby_name) {
         return out;
 }
 
+void print_gameboard(game* g);
+
 
 int validate_move(int from, int to, player* p, game* g) {
 	int directionLeft;
@@ -150,12 +152,12 @@ int validate_move(int from, int to, player* p, game* g) {
 			//player on top has pieces 2, 4
 			if(p->onTop) {
 				//check if jumping over enemy stone (1,3)
-				if((g->gameboard[from + (directionLeft / 2)] % 2) != 1) {
+				if((g->gameboard[from + directionLeft] % 2) != 1) {
 					return 1;
 				}
 			} else { //player on bot 1, 3
 				//check if jumping over enemy stone (2, 4)
-				if((g->gameboard[from + (directionLeft / 2)] % 2) != 0) {
+				if((g->gameboard[from + directionLeft] % 2) != 0) {
 					return 1;
 				}
 
@@ -164,12 +166,12 @@ int validate_move(int from, int to, player* p, game* g) {
 			//player on top has pieces 2, 4
 			if(p->onTop) {
 				//check if jumping over enemy stone (1,3)
-				if((g->gameboard[from + (directionRight / 2)] % 2) != 1) {
+				if((g->gameboard[from + directionRight] % 2) != 1) {
 					return 1;
 				}
 			} else { //player on bot 1, 3
 				//check if jumping over enemy stone (2, 4)
-				if((g->gameboard[from + (directionRight / 2)] % 2) != 0) {
+				if((g->gameboard[from + directionRight] % 2) != 0) {
 					return 1;
 				}
 
@@ -211,14 +213,22 @@ void print_gameboard(game* g) {
 
 void make_move(int from, int to, player* p, game* g) {
 	if(p->onTop) {
-		g->gameboard[63 - to] = g->gameboard[64 - from];
+		g->gameboard[63 - to] = g->gameboard[63 - from];
+
+		if((to - from) > 9 || (to - from) < -9) {
+			g->gameboard[63 - (from + (to - from) / 2)] = 0;
+		}
+
 		g->gameboard[63 - from] = 0;
 	} else {
 		g->gameboard[to] = g->gameboard[from];
+
+		if((to - from) > 9 || (to - from) < -9) {
+			g->gameboard[from + (to - from) / 2] = 0;
+		}
+
 		g->gameboard[from] = 0;
 	}
-
-	print_gameboard(g);
 }
 
 void free_game(game* g) {
