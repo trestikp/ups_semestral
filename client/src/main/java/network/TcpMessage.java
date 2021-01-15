@@ -12,15 +12,12 @@ public class TcpMessage {
 
     /**
      * Creates TcpMessage from String received from server
-     * @param serverRes
+     * @param serverRes server response
      */
     public TcpMessage(String serverRes) {
-        String parts[] = serverRes.split("\\|");
+        String[] parts = serverRes.split("\\|");
 
-//        System.out.println("Parts:");
-//        for(int i = 0; i < parts.length; i++) {
-//            System.out.println("part[" + i + "] is " + parts[i]);
-//        }
+        if(parts.length < 4) return;
 
         //TODO: format of response seems player_id|instruction|code|response_text
         try {

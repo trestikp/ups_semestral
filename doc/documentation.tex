@@ -132,7 +132,9 @@ TODO: obrazek retezoveho brani
 %
 \chapter{Popis protokolu}
 Protokol je posílán jako nešifrovaný text. Jednotlivé části jsou oddělené znakem '$|$'.
-	\section{Obecný tvar zpráv}
+%
+%
+\section{Obecný tvar zpráv}
 Obecný tvar zprávy je:
 \begin{itemize}
 	\item ID\_hráče$|$INSTRUKCE$|$parameter$|$parametr...
@@ -146,12 +148,15 @@ Obecný tvar zprávy je:
 
 
 \noindent VYSLEDEK nabývá hodnok "OK" a "ERROR", lze ho považovat za typ instrukce.
+%
+%
+\section{Tabulka instrukci a ocekavane poradi / stavovy diagram}
+TODO
 
 \section{Popis instrukcí a odpovědí}
 %
 %
-%
-\subsection{CONNECT}
+\subsection{Instrukce: CONNECT}
 \subsubsection{Popis}
 Připojí hráče k serveru. Pokud první zpráva od nového připojení není CONNECT,
 tak server připojení odpojí. Při zadání ID hráče slouží k znovu připojení k serveru.\\
@@ -177,19 +182,22 @@ tak server připojení odpojí. Při zadání ID hráče slouží k znovu připo
 		\end{itemize}
 	\item Negativní
 		\begin{itemize}
-			\item 402 -
-			\item 402 -
+			\item 402 - Username is empty
+			\item 403 - Username already in use
+			\item 404 - Server failed to add player
+			\item 405 - Player with this ID doesn't exist (zmenit?)
+			\item 406 - Is this an attack attempt (docasny)
 		\end{itemize}
 \end{itemize}
 %
 %
 %
-\subsection{CREATE\_LOBBY}
+\subsection{Instrukce: CREATE\_LOBBY}
 \subsubsection{Popis}
 Vytvoří nové lobby a přidá hráče, který ho vytvořil jako hráč 1. Hráč 1 má vždy
 bílé kámeny.
 
-\subsubsection{Přesné formáty}
+\subsubsection{Přesný formát}
 \begin{itemize}
 	\item ID\_$|$CREATE\_LOBBY$|$lobby\_name
 		\begin{itemize}
@@ -212,12 +220,12 @@ bílé kámeny.
 %
 %
 %
-\subsection{JOIN\_GAME}
+\subsection{Instrukce: JOIN\_GAME}
 \subsubsection{Popis}
 Připojí hráče do existující místnosti. Připojené hráče nastaví jako hráč 2, který má
 černé kameny. Převede stav hry na stav probíhající.
 
-\subsubsection{Přesné formáty}
+\subsubsection{Přesný formát}
 \begin{itemize}
 	\item ID\_hráče$|$JOIN\_GAME$|$lobby\_name
 		\begin{itemize}
@@ -233,18 +241,22 @@ Připojí hráče do existující místnosti. Připojené hráče nastaví jako 
 		\end{itemize}
 	\item Negativní
 		\begin{itemize}
-			\item 402 -
-			\item 402 -
+			\item 402 - Lobby name is too long
+			\item 403 - Failed to find game lobby
+			\item 404 - Unexpected token count
+			\item 405 - Failed to parse ID
+			\item 406 - Opponent starting error
+			\item 407 - Unrecognized instruction
 		\end{itemize}
 \end{itemize}
 %
 %
 %
-\subsection{DELETE\_LOBBY}
+\subsection{Instrukce: DELETE\_LOBBY}
 \subsubsection{Popis}
 Zruší vytvořené lobby, pokud v něm je pouze zakladatel lobby.
 
-\subsubsection{Přesné formáty}
+\subsubsection{Přesný formát}
 \begin{itemize}
 	\item ID\_hráče$|$DELETE\_LOBBY
 \end{itemize}
@@ -257,18 +269,17 @@ Zruší vytvořené lobby, pokud v něm je pouze zakladatel lobby.
 		\end{itemize}
 	\item Negativní
 		\begin{itemize}
-			\item 402 -
-			\item 402 -
+			\item 402 - No game found for this player
 		\end{itemize}
 \end{itemize}
 %
 %
 %
-\subsection{LOBBY}
+\subsection{Instrukce: LOBBY}
 \subsubsection{Popis}
 Požadavek uživatele na získání lobby, dostupných k připojení.
 
-\subsubsection{Přesné formáty}
+\subsubsection{Přesný formát}
 \begin{itemize}
 	\item ID\_hráče$|$LOBBY
 \end{itemize}
@@ -281,23 +292,22 @@ Požadavek uživatele na získání lobby, dostupných k připojení.
 		\end{itemize}
 	\item Negativní
 		\begin{itemize}
-			\item 402 -
-			\item 402 -
+			\item 402 - Failed to fetch game
 		\end{itemize}
 \end{itemize}
 %
 %
 %
-\subsection{TURN}
+\subsection{Instrukce: TURN}
 \subsubsection{Popis}
 Provede tah nebo sekvenci tahů. Kontaktuje protivníka o hráčovo tazích.
 
-\subsubsection{Přesný formáty}
+\subsubsection{Přesný formát}
 \begin{itemize}
 	\item ID\_hráče$|$TURN$|$paramter\_1$|$parametr\_2$|$...$|$parameter\_30
 		\begin{itemize}
 			\item parametr\_1 - pozice kamene
-			\item parametr\_x - index (pozice) lokace tahu
+			\item parametr\_x - index (pozice) cíle tahu
 		\end{itemize}
 \end{itemize}
 
@@ -306,21 +316,27 @@ Provede tah nebo sekvenci tahů. Kontaktuje protivníka o hráčovo tazích.
 	\item Pozitivní
 		\begin{itemize}
 			\item 202 - Turn Successful
+			\item 203 - You won!
+			\item 204 - You lost!
 		\end{itemize}
 	\item Negativní
 		\begin{itemize}
-			\item 402 -
-			\item 402 -
+			\item 402 - Failed to find game
+			\item 403 - Need starting position
+			\item 404 - Failed to validate move
+			\item 405 - This is not your game
+			\item 406 - Parameter isn't number
+			\item 407 - Failed to contact opponent
 		\end{itemize}
 \end{itemize}
 %
 %
 %
-\subsection{DISCONNECT}
+\subsection{Instrukce: DISCONNECT}
 \subsubsection{Popis}
 Použito když se hráč odpojuje od serveru. Vymaže hráče ze seznamu hráčů.
 
-\subsubsection{Přesný formáty}
+\subsubsection{Přesný formát}
 \begin{itemize}
 	\item ID\_hráče$|$DISCONNECT
 \end{itemize}
@@ -333,19 +349,18 @@ Použito když se hráč odpojuje od serveru. Vymaže hráče ze seznamu hráč�
 		\end{itemize}
 	\item Negativní
 		\begin{itemize}
-			\item 402 -
-			\item 402 -
+			\item 402 - Player not found
 		\end{itemize}
 \end{itemize}
 %
 %
 %
-\subsection{OPPONENT\_JOIN}
+\subsection{Instrukce: OPPONENT\_JOIN}
 \subsubsection{Popis}
 Instrukce, kterou posílá server klientovi (protivníkovi hráče, který poslal instrukci JOIN\_GAME),
 informující ho o tahu protivníka. Instrukce musí být potvrzena pomocí "OK" nebo "ERROR" odpovědi od klienta.
 
-\subsubsection{Přesný formáty}
+\subsubsection{Přesný formát}
 \begin{itemize}
 	\item ID\_protivníka$|$OPPONENT\_JOIN$|$kód$|$zpárva$|$username
 		\begin{itemize}
@@ -361,21 +376,15 @@ informující ho o tahu protivníka. Instrukce musí být potvrzena pomocí "OK"
 		\begin{itemize}
 			\item 201 - Successfully joined game
 		\end{itemize}
-	\item Negativní
-		\begin{itemize}
-			\item 402 -
-			\item 402 -
-		\end{itemize}
-	\item Parametr - odpověď má za parametr jméno protivníka
 \end{itemize}
 %
 %
 %
-\subsection{OPPONENT\_TURN}
+\subsection{Instrukce: OPPONENT\_TURN}
 \subsubsection{Popis}
 Pošle klientovi tah protivníka. Potvrzována pomocí "OK" nebo "ERROR".
 
-\subsubsection{Přesný formáty}
+\subsubsection{Přesný formát}
 \begin{itemize}
 	\item ID\_hráče$|$OPPONENT\_TURN$|$parametr\_1$|$parametr\_2$|$...
 \end{itemize}
@@ -385,11 +394,8 @@ Pošle klientovi tah protivníka. Potvrzována pomocí "OK" nebo "ERROR".
 	\item Pozitivní
 		\begin{itemize}
 			\item 201 - Opponent moved
-		\end{itemize}
-	\item Negativní
-		\begin{itemize}
-			\item 402 -
-			\item 402 -
+			\item 203 - You won!
+			\item 204 - You lost!
 		\end{itemize}
 \end{itemize}
 

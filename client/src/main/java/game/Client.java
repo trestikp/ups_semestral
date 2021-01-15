@@ -78,10 +78,15 @@ public class Client implements Runnable {
 
         while(auto.getGameState() != State.END) {
 //            if(connection != null && connection.getSoc() != null && connection.getSoc().isConnected()) {
+            updateStatusElements();
+
             if(isClientConnected()) {
                 msg = connection.recieveMessage();
 
-                updateStatusElements();
+                if(!msg.validateTcpMessage(inst)) {
+                    msg = null;
+                    status.setResponseText("Failed to parse receive message");
+                }
 
                 if(msg != null) {
                     if (msg.getInst() == Instruction.OK || msg.getInst() == Instruction.ERROR ||
@@ -150,6 +155,7 @@ public class Client implements Runnable {
     public void establishConnection() {
         if(connection != null) {
             System.err.println("Connection already exists");
+            status.setResponseText("Connection already exists");
             return;
         }
 
@@ -157,6 +163,14 @@ public class Client implements Runnable {
 
         if(connection.getSoc() == null) {
             System.err.println("Failed to create socket");
+            status.setResponseText("Failed to create socket");
+            connection = null;
+            return;
+        }
+
+        if(!connection.getSoc().isConnected()) {
+            System.err.println("Created socket but can't connect");
+            status.setResponseText("Created socket but can't connect");
             connection = null;
         }
     }
@@ -848,7 +862,8 @@ public class Client implements Runnable {
                 status.clientConnectionLabel.setText("Connected");
             }
 
-            status.clientNameLabel.setVisible(username != null);
+//            status.clientNameLabel.setVisible(username != null);
+            setUsername(username);
 
             if(auto != null && auto.getGameState() != null) {
                 status.clientStateLabel.setText("State: " + auto.getGameState().getName());

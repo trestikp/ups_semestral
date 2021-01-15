@@ -390,7 +390,7 @@ char* connect_my(int* player_id, char* username, int fd) {
 	
 		if(!p) {
 			//TODO think of error code
-			return construct_message(*player_id, 410,
+			return construct_message(*player_id, 404,
 					      "Server failed to add player");
 			//return 410;
 		}
@@ -409,11 +409,12 @@ char* connect_my(int* player_id, char* username, int fd) {
 		//return 201;
 	} else {
 		//reconnection/ attack
+		//TODO change to id check
 		p = find_and_verify_player(*player_id, fd);
 
 		if(!p) {
 			printf("Player with ID %d doesn't exist!\n", *player_id);
-			return construct_message(*player_id, 410,
+			return construct_message(*player_id, 405,
 					      "Player with this ID doesn't exist");
 			//return 400;
 		}
@@ -426,7 +427,7 @@ char* connect_my(int* player_id, char* username, int fd) {
 			//return 202;
 		} else {
 			printf("Player is either already connected or IDs don't match\n");
-			return construct_message(*player_id, 410,
+			return construct_message(*player_id, 406,
 					      "Is this an attack attempt");
 			//return 400;
 		}
@@ -506,7 +507,7 @@ char* delete_lobby(player* p) {
 	}
 
 	if(!curr) {
-		return construct_message(p->id, 401, "No game found for this player");
+		return construct_message(p->id, 402, "No game found for this player");
 	}
 
 	free(curr->data);
@@ -561,10 +562,10 @@ char* join_game(player* p, char* lobby_name) {
 	switch(rv) {
 		case 0: msg = construct_message(p->id, 201, "Successfully joined game"); break;
 		case 1: msg = construct_message(p->id, 404, "Unexpected token count"); break;
-		case 2: msg = construct_message(p->id, 404, "Failed to parse ID"); break;
+		case 2: msg = construct_message(p->id, 405, "Failed to parse ID"); break;
 		case 3: msg = construct_message(p->id, 201, "Successfully joined game"); break;
-		case 4: msg = construct_message(p->id, 404, "Opponent starting error"); break;
-		case 5: msg = construct_message(p->id, 404, "Unrecognized instruction"); break;
+		case 4: msg = construct_message(p->id, 406, "Opponent starting error"); break;
+		case 5: msg = construct_message(p->id, 407, "Unrecognized instruction"); break;
 	}
 
 	//msg = construct_message(p->id, 201, "Successfully joined game");
@@ -706,7 +707,7 @@ char* turn(player* p, char* parts[32], int parts_count) {
 	if(rv == 3 || rv == 0) {
 		return construct_message(p->id, 202, "Turn successful");
 	} else {
-		return construct_message(p->id, 406, "Failed to contact opponent");
+		return construct_message(p->id, 407, "Failed to contact opponent");
 	}
 }
 
@@ -726,6 +727,7 @@ char* ping(player* p) {
 */
 char* disconnect(player* p) {
 	l_link *prev = NULL, *curr = NULL;
+	int found = 1;
 
 /*
 	if(strcmp(p->username, username)) {
@@ -737,11 +739,16 @@ char* disconnect(player* p) {
 
 	while(curr) {
 		if(((player*) curr->data) == p) {
+			found = 0;
 			break;
 		}
 
 		prev = curr;
 		curr = curr->next;
+	}
+
+	if(found) {
+		return construct_message(0, 402, "Player not found");
 	}
 
 	if(prev) {
