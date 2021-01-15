@@ -1,5 +1,5 @@
 #include "server.h"
-#include "controler.h"
+
 #include <asm-generic/socket.h>
 #include <sys/select.h>
 #include <arpa/inet.h>
@@ -7,10 +7,20 @@
 #include <sys/socket.h>
 
 
+/**
+	Controller only returns char* message. This is used for additional actions. ie.: disconnect
+*/
 int additionalActions = 0;
 
+/**
+	server socket
+*/
 int ss;
 
+/**
+	Creater server socket with ip @ip and port @port.
+	Return server_socket or -1 on failure
+*/
 int create_server_socket(char* ip, int port) {
 	int server_socket = 0;
 	struct sockaddr_in server_address;
@@ -59,12 +69,22 @@ int create_server_socket(char* ip, int port) {
 	return server_socket;
 }
 
+/**
+	Establishes server with default values
+*/
 int establish_server() {
 	create_server_socket("127.0.0.1", 61116);
 
 	return 0;
 }
 
+/**
+	Runs server. Creates server socket with @ip and @port and services connections.
+	Wasn't intended to create server socket. Temporary solution
+
+	Return 0 on successful finish, other numbers on error. 1 on server socket creation failure.
+	2 on SIGINT (used as server stopper for now). 3 On ther FD_SET error
+*/
 int run_server(char* ip, int port) {
 	int rv = 0, i = 0, data_size;
 	#define BUFFER_SIZE 256
@@ -97,10 +117,10 @@ int run_server(char* ip, int port) {
 		if(rv < 0) {
 			if(errno == EINTR) {
 				printf("FD_SET interrupt error. Closing server.\n");
-				return 0;
+				return 2;
 			} else {
 				printf("FD_SET error: %d\n", errno);
-				return 1;
+				return 3;
 			}
 		}
 
@@ -158,11 +178,14 @@ int run_server(char* ip, int port) {
 	return 0;
 }
 
+/**
+	Closes server socket and frees controller memory. Exits with return value 1
+*/
 void stop_server() {
 	log_message("Stopping server", LVL_INFO);
 	close(ss);
 
-	free_controler();
+	free_controller();
 
 	exit(1);
 }

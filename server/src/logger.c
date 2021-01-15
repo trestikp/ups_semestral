@@ -1,7 +1,9 @@
 #include "logger.h"
 
+/** Name of log file */
 const char log_file[] = "server_log.log";
 
+/** Appends @message to log file with @level */
 int log_message(char *message, log_level level) {
 	FILE *f = fopen(log_file, "a+");
 	

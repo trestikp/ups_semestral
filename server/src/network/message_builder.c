@@ -1,6 +1,10 @@
 #include "message_builder.h"
 
 
+/**
+	Appends parameter @par to message @message. Default message size is 1kB
+	if @par exceeds 1kB resizes original message, adding additional 1kB
+*/
 int append_parameter(char** message, char* par) {
 	int msg_len = strlen(*message);
 	int par_len = strlen(par);
@@ -29,6 +33,9 @@ int append_parameter(char** message, char* par) {
 	return 0;
 }
 
+/**
+	Initializes message with @player_id. Return message pointer or NULL on fail.
+*/
 char* init_message_with_id(int player_id) {
 	char* message = calloc(DEFAULT_SIZE, sizeof(char));
 	
@@ -39,12 +46,16 @@ char* init_message_with_id(int player_id) {
 	return message;
 }
 
-
+/**
+	Append instruction @instruction to message @message
+*/
 void append_instruction(char* message, char* instruction) {
 	sprintf(message + strlen(message) * sizeof(char), "|%s", instruction);
 }
 
-
+/**
+	Append result instruction determined by @code to message @message
+*/
 void append_result(char* message, int code) {
 	if(code >= 200 && code < 300) {
 		append_instruction(message, "OK");
@@ -53,29 +64,25 @@ void append_result(char* message, int code) {
         }
 }
 
-
+/**
+	Append number @code to message @message
+*/
 void append_code(char* message, int code) {
 	sprintf(message + strlen(message) * sizeof(char), "|%d", code);
 }
 
-
+/**
+	Append message @msg to message @message
+*/
 void append_message(char* message, char* msg) {
 	sprintf(message + strlen(message) * sizeof(char), "|%s\n", msg);
 }
 
-/*
-char* construct_message_short(int player_id, int code) {
-	char* msg = init_message_with_id(player_id);
-
-	if(!msg) return NULL;
-
-        append_result(msg, code);
-	append_code(msg, code);
-
-	return msg;
-}
+/**
+	Constructs message with id @player_id, return code @code and message @message
+	Determines instruction with @code.
+	Return message pointer or NULL
 */
-
 char* construct_message(int player_id, int code, char* message) {
 	char* msg = init_message_with_id(player_id);
 
@@ -89,6 +96,11 @@ char* construct_message(int player_id, int code, char* message) {
 }
 
 
+/**
+	Constructs message with id @player_id, return code @code, instruction @inst, 
+	message @message.
+	Returns message pointer or NULL
+*/
 char* construct_message_with_inst(int player_id, char* inst, int code, char* message) {
 	char* msg = init_message_with_id(player_id);
 

@@ -3,6 +3,12 @@
 
 #include "../general_functions.h"
 
+#include <string.h>
+
+/**
+	player structure:
+	contains: id, socket, username and statuses (connected, busy, onTop, strikes)
+*/
 typedef struct {
 	int socket;
 	int id;
@@ -12,6 +18,10 @@ typedef struct {
 	int onTop;
 	char *username; //?
 } player;
+
+/**
+	For function documentation see .c file
+*/
 
 int add_player_to_list(l_link *head, player *p);
 player* find_player_in_list(l_link *head, int id);

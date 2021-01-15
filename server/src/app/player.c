@@ -1,13 +1,18 @@
 #include "player.h"
-#include <string.h>
 
 
+/**
+	Adds player @p to list @head
+*/
 int add_player_to_list(l_link *head, player *p) {
 	add_lifo(&head, p);
 	
 	return 0;
 }
 
+/**
+	Find player with @id in list @head. Return NULL if it fails to find player
+*/
 player* find_player_in_list(l_link *head, int id) {
 	while(head) {
 		if(id == ((player*) head->data)->id) {
@@ -20,7 +25,9 @@ player* find_player_in_list(l_link *head, int id) {
 	return NULL;
 }
 
-
+/**
+	Finds player in list @head with socket @fd. Returns NULL if it fails to find player
+*/
 player* find_player_by_fd(l_link *head, int fd) {
 	while(head) {
 		if(fd == ((player*) head->data)->socket) {
@@ -33,8 +40,8 @@ player* find_player_by_fd(l_link *head, int fd) {
 	return NULL;
 }
 
-/*
-  Basic check, if the id from request matches the id of player on server.
+/**
+	Basic check to see if player id @p->id in server memory matches parse id @user_id
 */
 int verify_player(player* p, int user_id) {
 	if(p->id == user_id) {
@@ -44,6 +51,10 @@ int verify_player(player* p, int user_id) {
 	}
 }
 
+
+/**
+	Checks if username is available. Return 0 if it is NOT.
+*/
 int is_username_available(l_link *head, char *username) {
 	while(head) {
 		if(!strcmp(((player*) head->data)->username, username)) {
@@ -56,8 +67,11 @@ int is_username_available(l_link *head, char *username) {
 	return 1;
 }
 
+/**
+	Allocates player structure memory and initializes it with default values.
+*/
 player* init_player(int fd) {
-        player *new = malloc(sizeof(player));
+        player *new = calloc(1, sizeof(player));
                 
         if(!new) return NULL;
                 
@@ -71,6 +85,9 @@ player* init_player(int fd) {
         return new;	
 }
 
+/**
+	Free player memory
+*/
 void free_player(player* p) {
 	if(p->username) free(p->username);
 	free(p);

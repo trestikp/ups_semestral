@@ -3,38 +3,44 @@ package graphics;
 import game.Action;
 import game.Client;
 import javafx.event.ActionEvent;
-import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.HBox;
 import javafx.scene.shape.Ellipse;
 import network.Instruction;
 
 
+/**
+ * FXML controller for file connection_picker.fxml. Extends OverlordCtrl and implements CtrlNecessities
+ */
 public class ConnectionPickerCtrl extends OverlordCtrl implements CtrlNecessities {
-//    private Client client;
-
+    /** Parsed and processed server hostname */
     private String host;
+    /** Parsed and processed server port */
     private int port;
+    /** Parsed and processed username */
     private String username;
 
+    /** Hostname input TextField */
     public TextField ipInputTF;
+    /** Port input TextField */
     public TextField portInputTF;
+    /** Username input TextField */
     public TextField usernameInputTF;
 
+    /** Button for connection */
     public Button connectBtn;
+    /** Button for cancelation */
     public Button cancelBtn;
 
+    /** Hostname error label */
     public Label ipErrorLbl;
+    /** Port error label */
     public Label portErrorLbl;
+    /** Username error label */
     public Label usernameErrorlbl;
 
-    //status
-//    public HBox status;
-//    @FXML
-//    public StatusBarCtrl statusController;
-
+    // Status bar elements
     public Ellipse clientConnectCircle;
     public Label responseLabel;
     public Label clientStateLabel;
@@ -44,18 +50,23 @@ public class ConnectionPickerCtrl extends OverlordCtrl implements CtrlNecessitie
     public Label opponentConnectionLabel;
     public Label opponentNameLabel;
 
-
+    /**
+     * Sets client instance and status bar for this scene
+     * @param client client instance
+     */
     public void setClient(Client client) {
-//        setClient(client, statusController);
         StatusBar status = new StatusBar(clientConnectCircle, responseLabel, clientStateLabel, clientNameLabel,
                 clientConnectionLabel, opponentConnectCircle, opponentConnectionLabel, opponentNameLabel);
         setClient(client, status);
-
-//        client.setStatusElements(clientConnectCircle, clientConnectionLabel, clientNameLabel, clientStateLabel,
-//                                 responseLabel, opponentConnectCircle, opponentConnectionLabel, opponentNameLabel);
-//        client.updateStatusElements();
     }
 
+    /**
+     * Basic input validation. Validates Hostname, Port, Username.
+     * @param ip hostname
+     * @param port port
+     * @param username username
+     * @return true on successful validation
+     */
     private boolean validateInputs(String ip, String port, String username) {
         boolean allGood = false, ipGood = false, portGood = false, nameGood = false;
 
@@ -102,6 +113,10 @@ public class ConnectionPickerCtrl extends OverlordCtrl implements CtrlNecessitie
         return (ipGood && portGood && nameGood);
     }
 
+    /**
+     * Button event action. Sets Hostname, Port and Username in client instance and sets instruction to CONNECT.
+     * @param actionEvent
+     */
     public void connect(ActionEvent actionEvent) {
         if(validateInputs(ipInputTF.getText(), portInputTF.getText(), usernameInputTF.getText())) {
             host = ipInputTF.getText();
@@ -120,11 +135,14 @@ public class ConnectionPickerCtrl extends OverlordCtrl implements CtrlNecessitie
                 client.getAutomaton().makeTransition(Action.INVALID_IN);
             } else {
                 responseLabel.setText("Invalid automaton transition");
-//                statusController.responseLabel.setText("Invalid automaton transition");
             }
         }
     }
 
+    /**
+     * Button event action. Cancels connection picking and returns user to main_menu_disconnected.fxml
+     * @param actionEvent
+     */
     public void cancel(ActionEvent actionEvent) {
         genericSetScene("main_menu_disconnected.fxml");
 
@@ -132,7 +150,6 @@ public class ConnectionPickerCtrl extends OverlordCtrl implements CtrlNecessitie
             client.getAutomaton().makeTransition(Action.CANCEL);
         } else {
             responseLabel.setText("Invalid automaton transition");
-//            statusController.responseLabel.setText("Invalid automaton transition");
         }
     }
 }

@@ -1,5 +1,8 @@
 package game;
 
+/**
+ * Application states
+ */
 public enum State {
     DISCONNECTED    ("disconnected"     , 0),
     PICKER          ("picker"           , 1),
@@ -12,14 +15,6 @@ public enum State {
     PAUSE           ("pause"            , 8),
     NOT_ALLOWED     ("not allowed"      , 9),
     END             ("end"              , 10);
-//    INIT            ("init"         , 0),
-//    CONNECTED       ("connected"    , 1),
-//    WAITING         ("waiting"      , 2),
-//    WORKING         ("wokring"      , 3),
-//    PAUSED          ("paused"       , 4),
-//    END             ("end"          , 5),
-//    DISCONNECTED    ("disconnected" , 6),
-//    ERROR           ("error"        , 7);
 
     private final String name;
     private final int code;
@@ -29,10 +24,18 @@ public enum State {
         this.code = code;
     }
 
+    /**
+     * Get application state name
+     * @return String
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Get application code ("index")
+     * @return int
+     */
     public int getCode() {
         return code;
     }

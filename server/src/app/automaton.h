@@ -4,6 +4,7 @@
 #define STATE_COUNT 5
 #define ACTION_COUNT 5
 
+/** Possible states */
 typedef enum {
 	INIT = 0,
 	WAITING = 1,
@@ -12,6 +13,8 @@ typedef enum {
 	ERROR = 4
 } state;
 
+
+/** Possible actions */
 typedef enum {
 	JOIN_QUEUE = 0,
 	START_GAME = 1,

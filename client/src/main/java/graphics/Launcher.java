@@ -5,6 +5,9 @@ import javafx.stage.Stage;
 
 //TODO: --module-path="/usr/lib/jvm/javafx-sdk-11.0.2/lib" --add-modules=javafx.control
 
+/**
+ * Starting class of the application. Creates an instance of Handler class
+ */
 public class Launcher extends Application {
 
     @Override

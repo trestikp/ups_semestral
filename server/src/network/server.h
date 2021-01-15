@@ -11,8 +11,12 @@
 #include <netinet/in.h>
 
 #include "../logger.h"
-#include "controler.h"
+#include "controller.h"
 #include "../general_functions.h"
+
+/**
+	For function doc see .c file
+*/
 
 int run_server(char* ip, int port);
 int establish_server();

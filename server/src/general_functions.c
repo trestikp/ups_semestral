@@ -1,5 +1,9 @@
 #include "general_functions.h"
 
+
+/**
+	Adds (void*) data @data to list @head as LIFO (stack).
+*/
 int add_lifo(l_link **head, void *data) {
         l_link *new = malloc(sizeof(l_link));
 
@@ -25,6 +29,10 @@ int add_lifo(l_link **head, void *data) {
         return 0;
 }
 
+
+/**
+	Adds (void*) data @data to list @head as FIFO (queue).
+*/
 int add_fifo(l_link **head, void *data) {
         l_link *new = malloc(sizeof(l_link)), *ptr = *head;
 
@@ -49,6 +57,9 @@ int add_fifo(l_link **head, void *data) {
         return 0;
 }
 
+/**
+	Pops link from start of list @head
+*/
 l_link* pop_link(l_link** head) {
 	l_link* temp = *head;
 	*head = (*head)->next;
@@ -56,6 +67,9 @@ l_link* pop_link(l_link** head) {
 	return temp;
 }
 
+/**
+	Free list @head memory
+*/
 void free_list(l_link *head) {
         l_link *ptr = head;
 
@@ -66,42 +80,3 @@ void free_list(l_link *head) {
                 free(head);
         }
 }
-
-/*
-int main() {
-	l_link* lifo = NULL;
-
-	int a = 1;
-	int b = 2;
-	int c = 3;
-	int d = 4;
-	int e = 5;
-
-	add_lifo(&lifo, &a);
-	add_lifo(&lifo, &b);
-	add_lifo(&lifo, &c);
-	add_lifo(&lifo, &d);
-	add_lifo(&lifo, &e);
-
-	l_link* temp = lifo;
-	while(temp) {
-		printf("%d\n", *((int*) temp->data));
-		temp = temp->next;
-	}
-
-	l_link* fifo = NULL;
-
-	add_fifo(&fifo, &e);
-	add_fifo(&fifo, &d);
-	add_fifo(&fifo, &c);
-	add_fifo(&fifo, &b);
-	add_fifo(&fifo, &a);
-
-	l_link* temp2 = lifo;
-	while(temp2) {
-		printf("%d\n", *((int*) temp2->data));
-		temp2 = temp2->next;
-	}
-
-}
-*/

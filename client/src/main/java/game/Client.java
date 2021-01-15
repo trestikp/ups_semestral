@@ -10,39 +10,57 @@ import javafx.scene.layout.HBox;
 import network.Instruction;
 import network.TcpConnection;
 import network.TcpMessage;
-
 import java.util.ArrayList;
 
+/**
+ * Client class handles communication with server, stores game instance and stores automaton
+ */
 public class Client implements Runnable {
+    /** This class runs on this Thread */
     private Thread t;
 
+    /** Current controller stored in its parent */
     private OverlordCtrl currentCtrl;
 
+    /** Application automaton */
     private Automaton auto;
+    /** Game instance */
     private Game game = null;
 
+    /** Connection instance */
     private TcpConnection connection;
 
+    /** Instruction to be sent to server */
     private Instruction inst = null;
 
+    /** Request parameters */
     private ArrayList<String> requestPar = new ArrayList<>();
 
+    /** Clients ID assigned by server */
     private int clientID;
 
     //opponent
+    /** Opponents name */
     private String opponentName;
+    /** Opponents connected status */
     private boolean opponentConnected;
 
     //connection info
+    /** Players username */
     private String username;
+    /** Server hostname */
     private String host;
+    /** Server port */
     private int port;
 
     //status info
+    /** GUI status bar */
     private StatusBar status;
-//    private StatusBarCtrl status;
 
 
+    /**
+     * Constructor
+     */
     public Client() {
         auto = new Automaton();
 
@@ -50,6 +68,9 @@ public class Client implements Runnable {
         System.out.print("Creating client");
     }
 
+    /**
+     * Runs "infinite" cycle handling server communication. Overridden from thread
+     */
     @Override
     public void run() {
         boolean waitingForReply = false;
@@ -113,6 +134,9 @@ public class Client implements Runnable {
         }
     }
 
+    /**
+     * Start method for Thread
+     */
     public void start() {
         if(t == null) {
             t = new Thread(this, "backend");
@@ -120,6 +144,9 @@ public class Client implements Runnable {
         }
     }
 
+    /**
+     * Creates connection for application to start communication
+     */
     public void establishConnection() {
         if(connection != null) {
             System.err.println("Connection already exists");
@@ -134,6 +161,11 @@ public class Client implements Runnable {
         }
     }
 
+    /**
+     * Calls appropriate send request
+     * @param inst request of this parameter
+     * @return false if client fails to send request
+     */
     private boolean sendRequest(Instruction inst) {
         boolean rv = true;
 
@@ -151,6 +183,10 @@ public class Client implements Runnable {
         return rv;
     }
 
+    /**
+     * Calls appropriate handle request
+     * @param reply server reply
+     */
     private void handleRequest(TcpMessage reply) {
         switch (inst) {
             case CONNECT: handleConnect(reply); break;
@@ -167,6 +203,10 @@ public class Client implements Runnable {
         }
     }
 
+    /**
+     * Handles server message that isn't response to a request
+     * @param msg server's message
+     */
     private void handleServerMessage(TcpMessage msg) {
         if(msg.getInst() == Instruction.OPPONENT_JOIN) {
             if(auto.validateTransition(Action.START_I)) {
@@ -218,6 +258,10 @@ public class Client implements Runnable {
         }
     }
 
+    /**
+     * Send reply to servers message
+     * @param success whether message was handled successfully
+     */
     private void sendReply(boolean success) {
         StringBuilder sb = new StringBuilder();
 
@@ -233,6 +277,10 @@ public class Client implements Runnable {
         connection.sendMessageTxt(sb.toString());
     }
 
+    /**
+     * Handles sendRequest error
+     * @param inst Instruction which failed to send request
+     */
     private void handleError(Instruction inst) {
         switch (inst) {
             case CREATE_LOBBY: errorHandleCreateLobby();
@@ -245,6 +293,9 @@ public class Client implements Runnable {
 |                                                                                                                      |
 |---------------------------------------------------------------------------------------------------------------------*/
 
+    /**
+     * Sends request to "connect" - create player on server
+     */
     private void sendConnect() {
         StringBuilder sb = new StringBuilder();
 
@@ -258,6 +309,9 @@ public class Client implements Runnable {
         connection.sendMessageTxt(sb.toString());
     }
 
+    /**
+     * Sends request for disconnect
+     */
     private void sendDisconnect() {
         StringBuilder sb = new StringBuilder();
 
@@ -269,6 +323,10 @@ public class Client implements Runnable {
         connection.sendMessageTxt(sb.toString());
     }
 
+    /**
+     * Sends instruction to create lobby
+     * @return request send status
+     */
     private boolean sendCreateLobby() {
         StringBuilder sb = new StringBuilder();
 
@@ -281,6 +339,7 @@ public class Client implements Runnable {
             sb.append(((LobbyCreationCtrl) currentCtrl).getLobbyName());
         } else {
             status.setResponseText("Somehow wrong controller");
+            return false;
         }
 
         sb.append('\n');
@@ -290,6 +349,9 @@ public class Client implements Runnable {
         return true;
     }
 
+    /**
+     * Send delete lobby request
+     */
     private void sendDeleteLobby() {
         StringBuilder sb = new StringBuilder();
 
@@ -301,6 +363,9 @@ public class Client implements Runnable {
         connection.sendMessageTxt(sb.toString());
     }
 
+    /**
+     * Send request for lobby list
+     */
     private void sendLobby() {
         StringBuilder sb = new StringBuilder();
 
@@ -312,6 +377,10 @@ public class Client implements Runnable {
         connection.sendMessageTxt(sb.toString());
     }
 
+    /**
+     * Send request to join game from lobby list
+     * @return request send status
+     */
     private boolean sendJoinGame() {
         StringBuilder sb = new StringBuilder();
 
@@ -340,6 +409,10 @@ public class Client implements Runnable {
         return true;
     }
 
+    /**
+     * Send turn request
+     * @return send status
+     */
     private boolean sendTurn() {
         StringBuilder sb = new StringBuilder();
 
@@ -375,6 +448,10 @@ public class Client implements Runnable {
 |                                                                                                                      |
 |---------------------------------------------------------------------------------------------------------------------*/
 
+    /**
+     * Handle connect request confirmation
+     * @param reply server message
+     */
     public void handleConnect(TcpMessage reply) {
         if(reply.getInst() == Instruction.OK) {
             clientID = reply.getPlayer_id();
@@ -397,6 +474,10 @@ public class Client implements Runnable {
         }
     }
 
+    /**
+     * Handle disconnect request confirmation
+     * @param reply server message
+     */
     public void handleDisconnect(TcpMessage reply) {
         if(reply.getInst() == Instruction.OK) {
             if(auto.validateTransition(Action.DISCONNECT)) {
@@ -419,6 +500,10 @@ public class Client implements Runnable {
         }
     }
 
+    /**
+     * Handle create lobby request confirmation
+     * @param reply server message
+     */
     private void handleCreateLobby(TcpMessage reply) {
         if(reply.getInst() == Instruction.OK) {
             if(auto.validateTransition(Action.CREATE)) {
@@ -438,6 +523,10 @@ public class Client implements Runnable {
         }
     }
 
+    /**
+     * Handle lobby deletion request confirmation
+     * @param reply server message
+     */
     private void handleDeleteLobby(TcpMessage reply) {
         if(reply.getInst() == Instruction.OK) {
             if(auto.validateTransition(Action.CANCEL)) {
@@ -457,6 +546,10 @@ public class Client implements Runnable {
         }
     }
 
+    /**
+     * Handle lobby list request confirmation
+     * @param reply server message
+     */
     private void handleLobby(TcpMessage reply) {
         if(reply.getInst() == Instruction.OK) {
             if(auto.validateTransition(Action.JOIN)) {
@@ -487,6 +580,10 @@ public class Client implements Runnable {
         }
     }
 
+    /**
+     * Handle join game request confirmation
+     * @param reply server message
+     */
     private void handleJoinGame(TcpMessage reply) {
         if(reply.getInst() == Instruction.OK) {
             if(reply.getParams().length == 1) {
@@ -511,6 +608,10 @@ public class Client implements Runnable {
         }
     }
 
+    /**
+     * Handle turn request confirmation
+     * @param reply server message
+     */
     private void handleTurn(TcpMessage reply) {
         if(reply.getInst() == Instruction.OK) {
             if(auto.validateTransition(Action.TURN)) {
@@ -567,6 +668,9 @@ public class Client implements Runnable {
 |                                                                                                                      |
 |---------------------------------------------------------------------------------------------------------------------*/
 
+    /**
+     * Handle lobby creation erro
+     */
     private void errorHandleCreateLobby() {
         status.setResponseText("Failed to create lobby");
     }
@@ -577,24 +681,43 @@ public class Client implements Runnable {
 |                                                                                                                      |
 |---------------------------------------------------------------------------------------------------------------------*/
 
+    /**
+     * Sets opponent status elements to visible
+     */
     private void setOpponentVisible() {
         status.opponentConnectCircle.setVisible(true);
         status.opponentConnectionLabel.setVisible(true);
         status.opponentNameLabel.setVisible(true);
     }
 
+    /**
+     *
+     * @return if client is connected to server
+     */
     public boolean isClientConnected() {
         return connection != null && connection.getSoc() != null && connection.getSoc().isConnected();
     }
 
+    /**
+     *
+     * @return Game instance
+     */
     public Game getGame() {
         return game;
     }
 
+    /**
+     *
+     * @return server connection
+     */
     public TcpConnection getConnection() {
         return connection;
     }
 
+    /**
+     * Sets player username
+     * @param username players username
+     */
     public void setUsername(String username) {
         this.username = username;
 
@@ -602,33 +725,57 @@ public class Client implements Runnable {
         status.clientNameLabel.setVisible(true);
     }
 
+    /**
+     * Sets instruction to be requested and handled
+     * @param inst instruction
+     */
     public void setInstruction(Instruction inst) {
         this.inst = inst;
     }
 
+    /**
+     * Set hostname
+     * @param host name
+     */
     public void setHost(String host) {
         this.host = host;
     }
 
+    /**
+     * Sets server port
+     * @param port port
+     */
     public void setPort(int port) {
         this.port = port;
     }
 
+    /**
+     * Sets status bar instance
+     * @param status status bar
+     */
     public void setStatusBar(StatusBar status) {
         this.status = status;
     }
-//    public void setStatusBarCtrl(StatusBarCtrl status) {
-//        this.status = status;
-//    }
 
+    /**
+     *
+     * @return automaton instance
+     */
     public Automaton getAutomaton() {
         return auto;
     }
 
+    /**
+     * Adds parameter to request parameters
+     * @param par String to be appended
+     */
     public void addRequestPar(String par) {
         requestPar.add(par);
     }
 
+    /**
+     * Updates status elements
+     */
     public void updateStatusElements() {
         Platform.runLater(() -> {
 //            if(connection == null || connection.getSoc() == null || !connection.getSoc().isConnected()) {
@@ -662,6 +809,10 @@ public class Client implements Runnable {
         });
     }
 
+    /**
+     * Set current controller
+     * @param currentCtrl OverlordCtrl extender
+     */
     public void setCurrentCtrl(OverlordCtrl currentCtrl) {
         this.currentCtrl = currentCtrl;
     }
@@ -672,6 +823,11 @@ public class Client implements Runnable {
 |                                                                                                                      |
 |---------------------------------------------------------------------------------------------------------------------*/
 
+    /**
+     * Generates lobby item that is displayed in lobby list
+     * @param par lobby name
+     * @return HBox containing lobby list item
+     */
     public HBox generateLobbyItem(String par) {
         HBox container = new HBox();
         container.setMinHeight(70.0);
@@ -704,6 +860,10 @@ public class Client implements Runnable {
         return container;
     }
 
+    /**
+     * Inits GUI gameboard
+     * @param reply server reply
+     */
     private void initGUIBoard(TcpMessage reply) {
         Platform.runLater(() -> {
             currentCtrl.genericSetScene("gameboard_v2.fxml");

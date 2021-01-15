@@ -1,5 +1,8 @@
 package game;
 
+/**
+ * Class names Actions used for Automaton state transitions
+ */
 public enum Action {
     QUIT        ("quit"             , 0),
     CANCEL      ("cancel"           , 1),
@@ -36,10 +39,18 @@ public enum Action {
         this.code = code;
     }
 
+    /**
+     * Get action name (text)
+     * @return String
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Get code of action ("index")
+     * @return int
+     */
     public int getCode() {
         return code;
     }

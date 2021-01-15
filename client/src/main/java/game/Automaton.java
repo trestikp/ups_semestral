@@ -1,12 +1,19 @@
 package game;
 
-import javafx.scene.chart.StackedAreaChart;
 
+/**
+ * Automaton class contains current application state and transition table.
+ */
 public class Automaton {
+    /** Application state, not only game state */
     private State gameState;
 
+    /** Transition matrix */
     private final State[][] transitions = new State[State.values().length][Action.values().length];
 
+    /**
+     * Automaton constructor. Fills transition matrix and sets default state.
+     */
     public Automaton() {
         /* START OF TRANSITION INITIALIZATION */
 
@@ -18,28 +25,6 @@ public class Automaton {
         }
 
         //initializing possible transitions
-//        transitions[State.INIT.getCode()]           [Action.CONNECT.getCode()]      = State.CONNECTED;
-//
-//        transitions[State.CONNECTED.getCode()]      [Action.START.getCode()]        = State.WORKING;
-//        transitions[State.CONNECTED.getCode()]      [Action.QUEUE.getCode()]        = State.WAITING;
-//        transitions[State.CONNECTED.getCode()]      [Action.RECONNECT.getCode()]    = State.PAUSED;
-//
-//        transitions[State.WAITING.getCode()]        [Action.START.getCode()]        = State.WORKING;
-//
-//        transitions[State.WORKING.getCode()]        [Action.PAUSE.getCode()]        = State.PAUSED;
-//        transitions[State.WORKING.getCode()]        [Action.TURN.getCode()]         = State.WORKING;
-//        transitions[State.WORKING.getCode()]        [Action.END.getCode()]          = State.END;
-//
-//        transitions[State.PAUSED.getCode()]         [Action.RESUME.getCode()]       = State.WORKING;
-//        transitions[State.PAUSED.getCode()]         [Action.WAIT.getCode()]         = State.PAUSED;
-//
-//        transitions[State.CONNECTED.getCode()]      [Action.LOSS.getCode()]         = State.DISCONNECTED;
-//        transitions[State.WAITING.getCode()]        [Action.LOSS.getCode()]         = State.DISCONNECTED;
-//        transitions[State.WORKING.getCode()]        [Action.LOSS.getCode()]         = State.DISCONNECTED;
-//        transitions[State.PAUSED.getCode()]         [Action.LOSS.getCode()]         = State.DISCONNECTED;
-//
-//        transitions[State.DISCONNECTED.getCode()]   [Action.CONNECT.getCode()]    = State.CONNECTED;
-
         transitions[State.DISCONNECTED.getCode()]       [Action.QUIT.getCode()]             = State.END;
         transitions[State.DISCONNECTED.getCode()]       [Action.CONNECT.getCode()]          = State.PICKER;
 
@@ -77,18 +62,35 @@ public class Automaton {
     }
 
 
+    /**
+     * Performs transition in transition table from gameState with action
+     * @param a Action to be performed
+     */
     public void makeTransition(Action a) {
         gameState = transitions[gameState.getCode()][a.getCode()];
     }
 
+    /**
+     * Validates if translation can be made not going into "NOT_ALLOWED" state
+     * @param a Action to be performed
+     * @return true/ false
+     */
     public boolean validateTransition(Action a) {
         return transitions[gameState.getCode()][a.getCode()] != State.NOT_ALLOWED;
     }
 
+    /**
+     * Returns current gameState (application state)
+     * @return State instance
+     */
     public State getGameState() {
         return gameState;
     }
 
+    /**
+     * Sets state bypassing transition matrix. Intended for reconnection
+     * @param state to be set
+     */
     public void setGameState(State state) {
         this.gameState = state;
     }

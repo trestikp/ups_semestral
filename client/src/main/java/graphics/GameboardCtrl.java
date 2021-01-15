@@ -3,46 +3,45 @@ package graphics;
 import game.Client;
 import game.PSColor;
 import game.State;
-import game.Stone;
-import javafx.collections.ObservableList;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Ellipse;
 import network.Instruction;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Queue;
 
+
+/**
+ * FXML controller for file connection_picker.fxml. Extends OverlordCtrl and implements CtrlNecessities.
+ * Controls game board GUI.
+ */
 public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
+    /** Game Board pane */
     @FXML
     public GridPane board_gpane;
 
-    public PSColor pc;
-
-//    public HBox status;
-//    @FXML
-//    private StatusBarCtrl statusController;
-
+    /** List of panes player can move to from selected position */
     private LinkedList<Integer> highlightedPanes = new LinkedList<>();
+    /** Sequence in which player clicked fields */
     private LinkedList<Integer> moveSequence = new LinkedList<>();
 
-    private Image red = new Image(getClass().getResource("/img/red_piece.png").toString());
-    private Image blue = new Image(getClass().getResource("/img/blue_piece.png").toString());
-    private Image redKing = new Image(getClass().getResource("/img/red_king_piece.png").toString());
-    private Image blueKing = new Image(getClass().getResource("/img/blue_king_piece.png").toString());
+    /** Red stone image used to generate ImageViews (Image is 2000x2000 px takes long to load) */
+    private final Image red = new Image(getClass().getResource("/img/red_piece.png").toString());
+    /** Red stone image used to generate ImageViews (Image is 2000x2000 px takes long to load) */
+    private final Image blue = new Image(getClass().getResource("/img/blue_piece.png").toString());
+    /** Red stone image used to generate ImageViews (Image is 2000x2000 px takes long to load) */
+    private final Image redKing = new Image(getClass().getResource("/img/red_king_piece.png").toString());
+    /** Red stone image used to generate ImageViews (Image is 2000x2000 px takes long to load) */
+    private final Image blueKing = new Image(getClass().getResource("/img/blue_king_piece.png").toString());
 
-    //status
+
+    // Status bar elements
     public Ellipse clientConnectCircle;
     public Label responseLabel;
     public Label clientStateLabel;
@@ -52,11 +51,17 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
     public Label opponentConnectionLabel;
     public Label opponentNameLabel;
 
+    /**
+     * Controller creation calls
+     */
     @FXML
     public void initialize() {
         drawBoard();
     }
 
+    /**
+     * Prepares chess board in @board_gpane
+     */
     private void drawBoard() {
         for(int i = 0; i < 8; i++) {
             for(int j = 0; j < 8; j++) {
@@ -76,6 +81,9 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
         }
     }
 
+    /**
+     * Initializes stones to board_gpane
+     */
     public void initStones() {
         ImageView ps, es;
 
@@ -108,10 +116,6 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
                         responseLabel.setText("Opponents stone. No action");
                 });
 
-//                es.setOnMouseClicked(event -> {
-//                    System.out.println("Clicked stone");
-//                });
-
                 p.getChildren().add(es);
             } else if(gameBoard[i] == 1) {
                 ps.fitWidthProperty().bind(p.widthProperty());
@@ -122,25 +126,51 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
                     imageViewEvent(paneID);
 
                     System.out.println("You clicked " + paneID);
-//                    int paneID = Integer.parseInt(((ImageView) event.getSource()).getParent().getId());
-//
-//                    System.out.println("You clicked " + paneID + "!!");
-//
-////                    unHighlightMoves();
-//
-//                    if(((Pane) board_gpane.getChildren().get(paneID)).getChildren().isEmpty()) {
-//                        System.out.println("This pane is empty");
-//                        unHighlightMoves();
-//                    }
-//                    else {
-//                        System.out.println("This pane has a stone!");
-//                        unHighlightMoves();
-//                        highlightMoves(paneID);
-//                    }
                 });
 
                 p.getChildren().add(ps);
-            } else {
+            }
+
+            //debug
+            else if(gameBoard[i] == 3) {
+                if(playerColor == PSColor.BLACK) {
+                    ps = new ImageView(redKing);
+                } else {
+                    ps = new ImageView(blueKing);
+                }
+
+
+                ps.fitWidthProperty().bind(p.widthProperty());
+                ps.fitHeightProperty().bind(p.heightProperty());
+
+                ps.setOnMouseClicked(event -> {
+                    int paneID = Integer.parseInt(((ImageView) event.getSource()).getParent().getId());
+                    imageViewEvent(paneID);
+
+                    System.out.println("You clicked " + paneID);
+                });
+
+                p.getChildren().add(ps);
+            } else if(gameBoard[i] == 4) {
+                if(playerColor == PSColor.BLACK) {
+                    es = new ImageView(blueKing);
+                } else {
+                    es = new ImageView(redKing);
+                }
+
+                es.fitWidthProperty().bind(p.widthProperty());
+                es.fitHeightProperty().bind(p.heightProperty());
+
+                es.setOnMouseClicked(event -> {
+                    responseLabel.setText("Opponents stone. No action");
+                });
+
+                p.getChildren().add(es);
+            }
+            //end debug
+
+
+            else {
                 p.setOnMouseClicked(e -> {
                     responseLabel.setText("This field is empty.");
                     unHighlightMoves();
@@ -149,15 +179,25 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
         }
     }
 
+    /**
+     * Event set to players ImageView. Highlights fields which can be moved to from clicked ImageView.
+     * Unhighlights fields when clicked on empty field.
+     * @param paneID id of pane containing ImageView
+     */
     private void imageViewEvent(int paneID) {
         if(((Pane) board_gpane.getChildren().get(paneID)).getChildren().isEmpty()) {
             unHighlightMoves();
         } else {
             unHighlightMoves();
-            highlightMoves(paneID, false);
+            highlightMoves(paneID);
         }
     }
 
+    /**
+     * After player makes a move, removes action from other stones so player can't move with different stone.
+     * @param all list of stone positions
+     * @param id moved stone. Is exempted from action removal
+     */
     public void unsetImageViewEventsExceptID(ArrayList<Integer> all, int id) {
         for(int i : all) {
             if(i == id) continue;
@@ -175,6 +215,10 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
         }
     }
 
+    /**
+     * Sets ImageView events when players turn begins.
+     * @param ids players stone locations
+     */
     public void setImageViewEvents(ArrayList<Integer> ids) {
         for(int i : ids) {
             if(((Pane) board_gpane.getChildren().get(i)).getChildren().isEmpty()) {
@@ -185,6 +229,10 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
         }
     }
 
+    /**
+     * Unsets all ImageView events when it's opponents turn
+     * @param ids players stone locations
+     */
     public void unsetImageViewEvents(ArrayList<Integer> ids) {
         for(int i : ids) {
             if(((Pane) board_gpane.getChildren().get(i)).getChildren().isEmpty()) {
@@ -201,34 +249,39 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
         }
     }
 
-    private boolean highlightMoves(int paneID, boolean fakeSub) {
+    /**
+     * Highlights possible moves from clicked location
+     * @param paneID id of clicked location
+     */
+    private void highlightMoves(int paneID) {
         ArrayList<Integer> hl = new ArrayList<>();
-        client.getGame().getPossibleMoves(paneID, hl, fakeSub);
+        client.getGame().getPossibleMoves(paneID, hl, false, paneID, 0);
 
         if(!hl.isEmpty()) {
             for(int i : hl) {
-                board_gpane.getChildren().get(i).setStyle("-fx-background-color: #00FF00");
-                board_gpane.getChildren().get(i).setOnMouseClicked(event -> {
-                    clickedHL(paneID, i);
-
-//                    while(!highlightedPanes.isEmpty()) {
-//                        Node s = board_gpane.getChildren().get(highlightedPanes.poll());
-//                        s.setOnMouseClicked(null);
-//                    }
-                });
+                if(Math.abs(paneID - i) > 2 * 9) {
+                    getPaneWithID(i).setStyle("-fx-background-color: #00FF00");
+                } else {
+                    getPaneWithID(i).setStyle("-fx-background-color: YELLOW");
+                    getPaneWithID(i).setOnMouseClicked(event -> {
+                        clickedHL(paneID, i);
+                    });
+                }
 
                 highlightedPanes.add(i);
             }
-
-            return true;
         } else {
             System.out.println("HIGHLIGHT LIST IS NULL");
-            return false;
         }
     }
 
+    /**
+     * Mouse clicked event of highlighted pane. Moves piece
+     * @param source from
+     * @param clicked to
+     */
     private void clickedHL(int source, int clicked) {
-        unHighlightMoves();
+        unHighlightProximity(source);
 
         if(moveSequence.isEmpty()) {
             moveSequence.addFirst(source);
@@ -240,7 +293,8 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
 
         movePiece(source, clicked);
 
-        if(client.getGame().canMoveAgain(source, clicked) && highlightMoves(clicked,true)) {
+//        if(client.getGame().canMoveAgain(source, clicked) && highlightMoves(clicked,true)) {
+        if(client.getGame().canMoveAgain(source, clicked) && !highlightedPanes.isEmpty()) {
             System.out.println("more moves to make");
 
             try {
@@ -248,6 +302,8 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
             } catch (IndexOutOfBoundsException e) {
                 System.err.println("Welp continuous");
             }
+
+            highlightProximity(clicked);
 
         } else {
             System.out.println("Out of moves. Sending to server");
@@ -268,18 +324,12 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
             for(int i : moveSequence) {
                 client.addRequestPar(i + "");
             }
-
-            // TODO after server response enable pieces
         }
     }
 
-    public void reverseMoveSequence() {
-        Node n = ((Pane) board_gpane.getChildren().get(moveSequence.getLast())).getChildren().get(0);
-        ((Pane) board_gpane.getChildren().get(moveSequence.getFirst())).getChildren().add(n);
-        ((Pane) board_gpane.getChildren().get(moveSequence.getLast())).getChildren().remove(0);
-    }
-
-
+    /**
+     * Removes onClick event from highlighted panes
+     */
     private void removeHighlightOnClick() {
         while(!highlightedPanes.isEmpty()) {
             Node s = board_gpane.getChildren().get(highlightedPanes.poll());
@@ -287,6 +337,9 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
         }
     }
 
+    /**
+     * Unhighlights all possible moves
+     */
     private void unHighlightMoves() {
         for(int i : highlightedPanes) {
             board_gpane.getChildren().get(i).setStyle("-fx-background-color: #000000");
@@ -295,18 +348,65 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
         removeHighlightOnClick();
     }
 
+    /**
+     * Unhighlights possible moves with reach of one move
+     * @param id pane around which highlight are removed
+     */
+    private void unHighlightProximity(int id) {
+        ArrayList<Integer> test = new ArrayList<>();
+
+        for(int i : highlightedPanes) {
+            if(Math.abs(id - i) <= 2 * 9) {
+                getPaneWithID(i).setStyle("-fx-background-color: #000000");
+                getPaneWithID(i).setOnMouseClicked(null);
+                test.add(i);
+            }
+        }
+
+        for(int i : test) {
+            highlightedPanes.remove((Integer) i);
+        }
+    }
+
+    /**
+     * Highlights panes in proximity
+     * @param id pane around which panes are highlighted
+     */
+    private void highlightProximity(int id) {
+        for(int i : highlightedPanes) {
+            if(Math.abs(id - i) <= 2 * 9) {
+                getPaneWithID(i).setStyle("-fx-background-color: YELLOW");
+                getPaneWithID(i).setOnMouseClicked(event -> {
+                    clickedHL(id, i);
+                });
+            }
+        }
+    }
+
+    /**
+     * Ref. to @CtrlNecessities
+     * @param client instance
+     */
     public void setClient(Client client) {
-//        setClient(client, statusController);
         StatusBar status = new StatusBar(clientConnectCircle, responseLabel, clientStateLabel, clientNameLabel,
                 clientConnectionLabel, opponentConnectCircle, opponentConnectionLabel, opponentNameLabel);
         setClient(client, status);
     }
 
+    /**
+     * Saves a bit of writing
+     * @param id of clicked pane
+     * @return Pane
+     */
     private Pane getPaneWithID(int id) {
         return (Pane) board_gpane.getChildren().get(id);
     }
 
-
+    /**
+     * Move piece in GUI only
+     * @param from pane id
+     * @param to pane id
+     */
     private void movePiece(int from, int to) {
         try {
             Node n = ((Pane) board_gpane.getChildren().get(from)).getChildren().get(0);
@@ -316,12 +416,21 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
         }
     }
 
+    /**
+     * Removes stones from panes
+     * @param ids list of pane ids
+     */
     public void removeStones(ArrayList<Integer> ids) {
         for(int i : ids) {
             ((Pane) board_gpane.getChildren().get(i)).getChildren().clear();
         }
+
+        ids.clear();
     }
 
+    /**
+     * If server fails to validate move, returns piece to starting location
+     */
     public void resetMoveSequence() {
         Node n = null;
 
@@ -342,12 +451,33 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
         moveSequence.clear();
     }
 
+    /**
+     * When stone reaches backline change image to king stone
+     * @param position reached position
+     */
+    public void upgradePiece(int position) {
+        Pane p = getPaneWithID(position);
+        ImageView img = (ImageView) p.getChildren().get(0);
+
+        // == nor equals() works but this does...
+        if(img.getImage().getUrl().equals(red.getUrl())) {
+            img.setImage(redKing);
+        } else if(img.getImage().getUrl().equals(blue.getUrl())) {
+            img.setImage(blueKing);
+        } else {
+            responseLabel.setText("This is an unknown piece! Cannot upgrade");
+        }
+    }
+
+    /**
+     * Moves stone to the end of move sequence after server verification. Theoretically shouldn't be necessary
+     */
     public void moveStone() {
-        Node n = null;
+        ImageView n = null;
 
         for(int i = 0; i < moveSequence.size(); i++) {
             if(!getPaneWithID(moveSequence.get(i)).getChildren().isEmpty()) {
-                n = getPaneWithID(moveSequence.get(i)).getChildren().get(0);
+                n = (ImageView) getPaneWithID(moveSequence.get(i)).getChildren().get(0);
                 getPaneWithID(moveSequence.get(i)).getChildren().clear();
                 break;
             }
@@ -359,9 +489,22 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
         }
 
         getPaneWithID(moveSequence.getLast()).getChildren().add(n);
+
+        System.err.println("Target location: " + moveSequence.getLast());
+
+        if(moveSequence.getLast() < 8) {
+            System.err.println("Upgrading piece");
+            upgradePiece(moveSequence.getLast());
+        }
+
         moveSequence.clear();
     }
 
+    /**
+     * Performs opponent move sequence. Theoretically could only move stone from first position to last, because
+     * it's verified by server
+     * @param seq move sequence
+     */
     public void moveOpponentStones(String[] seq) {
         for(int i = 1; i < seq.length; i++) {
             int from = 63 - Integer.parseInt(seq[i - 1]);
@@ -371,6 +514,10 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
                 Node n = getPaneWithID(from).getChildren().get(0);
                 getPaneWithID(to).getChildren().add(n);
                 getPaneWithID(from).getChildren().clear();
+
+                if(to >= 56) {
+                    upgradePiece(to);
+                }
             } catch (IndexOutOfBoundsException e) {
                 System.err.println("There is no opponent stone to move");
             }

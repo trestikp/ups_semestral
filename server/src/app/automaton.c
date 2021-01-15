@@ -1,5 +1,6 @@
 #include "automaton.h"
 
+/** transition matrix initialization */
 state transition[STATE_COUNT][ACTION_COUNT] = {
 	[INIT][JOIN_QUEUE]	= WAITING,
 	[INIT][START_GAME]	= ERROR,
@@ -32,6 +33,7 @@ state transition[STATE_COUNT][ACTION_COUNT] = {
 	[ERROR][END_GAME] 	= ERROR,
 };
 
+/** transition states from @current with @act */
 state make_transition(state current, action act) {
 	return transition[current][act];
 }

@@ -3,10 +3,17 @@
 #include <string.h>
 #include <signal.h>
 
+
+/** Server ip  */
 char* ip = NULL;
+/** Server port */
 int port = -1;
+/** Maximum number of connection */
 int max_con = -1;
 
+/**
+	Prints help for the program
+*/
 void print_help() {
 	printf("Usage:\n\trun_server [options]\n");
 	printf("OPTIONS:\n");
@@ -16,6 +23,9 @@ void print_help() {
 	printf("-c NUM\n\tServer allows a maximum of NUM connections.\n");
 }
 
+/**
+	Parses command line argument
+*/
 int process_argument(char* sw, char* val) {
 	if(val[0] == '-') {
 		printf("Value start with - implying it's a switch!\n");
@@ -35,6 +45,9 @@ int process_argument(char* sw, char* val) {
 	return 0;
 }
 
+/**
+	Parse all command line arguments
+*/
 int parse_arguments(int argc, char *argv[]) {
 	int i = 0;
 
@@ -74,6 +87,9 @@ int parse_arguments(int argc, char *argv[]) {
 	return 0;
 }
 
+/**
+	Sets ip, port and max_con to default values
+*/
 void init_defaults() {
 	if(!ip)
 		ip = "127.0.0.1";
@@ -84,6 +100,9 @@ void init_defaults() {
 
 }
 
+/**
+	Start main program function
+*/
 int run() {
 	int rv = run_server(ip, port);
 
@@ -95,6 +114,9 @@ int run() {
 	return 0;
 }
 
+/**
+	Main
+*/
 int main(int argc, char *argv[]) {
 	log_message("Starting program", LVL_INFO);
 
