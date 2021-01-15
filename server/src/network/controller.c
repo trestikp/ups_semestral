@@ -189,6 +189,43 @@ int parse_string_to_int(char* str) {
 
 
 /**
+*/
+int delete_game_from_gplaying(game* g) {
+	l_link *prev = NULL, *curr = NULL;
+
+	curr = g_playing;
+
+	while(curr) {
+		if((game*) curr->data == g) {
+			break;
+		}
+
+		prev = curr;
+		curr = curr->next;
+	}
+
+	if(!curr) {
+		return 1;
+	}
+
+	free_game((game*) curr->data);
+	//free(curr->data);
+
+	if(prev) {
+		prev->next = curr->next;
+	} else {
+		//if prev = NULL, its the beginning of the lobby
+		// -> need to change 
+		g_playing = g_playing->next;
+	}
+
+	free(curr);
+
+	return 0;
+}
+
+
+/**
 	Does basic instruction validation. Validates number of tokens (message infromation
 	+ parameters) that are allowed with any instruction.
 */
@@ -585,13 +622,46 @@ char* turn(player* p, char* parts[32], int parts_count) {
 	}
 
 	if((winner =  check_for_victory(g))) {
-		if(winner == g->p1) {
-			char* op_msg = construct_message_with_inst(g->p2->id, inst_string[OPPONENT_TURN], 204,
-								   "You lost!");
-			rv = contact_player(g->p2->socket, winner->id, g->p2->id, op_msg);
+		char* op_msg;
+
+		g->p1->busy = 0;
+		g->p1->onTop = 0;
+
+		g->p2->busy = 0;
+		g->p2->onTop = 0;
+
+		if(winner == p) {
+			if(p == g->p1) {
+				op_msg = construct_message_with_inst(g->p2->id,
+					inst_string[OPPONENT_TURN], 204, "You lost!");
+
+				rv = contact_player(g->p2->socket, winner->id, g->p2->id, op_msg);
+			} else {
+				op_msg = construct_message_with_inst(g->p1->id,
+					inst_string[OPPONENT_TURN], 204, "You lost!");
+				rv = contact_player(g->p1->socket, winner->id, g->p1->id, op_msg);
+			}
+
+			delete_game_from_gplaying(g);
+
+			return construct_message(winner->id, 203, "You won!");
+		} else {
+			if(p == g->p1) {
+				op_msg = construct_message_with_inst(g->p2->id,
+					inst_string[OPPONENT_TURN], 203, "You won!");
+
+				rv = contact_player(g->p2->socket, winner->id, g->p2->id, op_msg);
+			} else {
+				op_msg = construct_message_with_inst(g->p1->id,
+					inst_string[OPPONENT_TURN], 203, "You won!");
+				rv = contact_player(g->p1->socket, winner->id, g->p1->id, op_msg);
+			}
+
+			delete_game_from_gplaying(g);
+
+			return construct_message(winner->id, 204, "You lost!");
+
 		}
-		
-		return construct_message(winner->id, 203, "You won!");
 	}
 
 

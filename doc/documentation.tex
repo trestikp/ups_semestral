@@ -1,0 +1,402 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% DODATEČNÉ BALÍČKY PRO SAZBU
+% Jejich užívání či neužívání záleží na libovůli autora 
+% práce
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[12pt]{report}
+
+
+% Zařadit literaturu do obsahu
+\usepackage[nottoc,notlot,notlof]{tocbibind}
+
+% Umožňuje vkládání obrázků
+\usepackage[pdftex]{graphicx}
+
+% Odkazy v PDF jsou aktivní; navíc se automaticky vkládá
+% balíček 'url', který umožňuje např. dělení slov
+% uvnitř URL
+\usepackage[pdftex]{hyperref}
+\hypersetup{colorlinks=true,
+  unicode=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=black,
+  bookmarksopen=true}
+
+% Při používání citačního stylu csplainnatkiv
+% (odvozen z csplainnat, http://repo.or.cz/w/csplainnat.git)
+% lze snadno modifikovat vzhled citací v textu
+\usepackage[numbers,sort&compress]{natbib}
+
+
+% me package
+\usepackage{float}
+\usepackage{subfig}
+\usepackage{siunitx}
+\usepackage[czech]{babel}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% VLASTNÍ TEXT PRÁCE
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\makeatletter
+\def\@makechapterhead#1{%
+  {\parindent \z@ \raggedright \normalfont
+    \Huge\bfseries
+    \ifnum \c@secnumdepth >\m@ne
+        \hangindent=1.5em
+        \noindent\hbox to 1.5em{\thechapter\hfil}%
+    \fi%
+    #1\par\nobreak
+    \vskip 40\p@
+  }}
+\def\@makeschapterhead#1{%
+  {\parindent \z@ \raggedright \normalfont
+    \interlinepenalty\@M
+    \Huge \bfseries  #1\par\nobreak
+    \vskip 40\p@
+  }}
+\makeatother
+
+
+\begin{document}
+%
+
+\begin{titlepage}
+\centerline{\includegraphics[width=10cm]{img/logo.jpg}}
+\begin{center}
+\vspace{30px}
+{\Huge
+\textbf{Úvod do počítačových sítí}\\
+\vspace{1cm}
+}
+{\Large
+\textbf{KIV/UPS}\\
+\vspace{1cm}
+}
+\vspace{1cm}
+{\large
+Pavel Třeštík\\
+}
+{\normalsize
+A17B0380P
+}
+\end{center}
+\vspace{\fill}
+\hfill
+\begin{minipage}[t]{7cm}
+\flushright
+\today
+\end{minipage}
+\end{titlepage}
+
+
+%\maketitle
+\tableofcontents
+
+
+
+\chapter{Popis hry Dáma}
+Jako téma semestrální práce jsem si zvolil hru Dáma. Zvolil jsem "klasickou" verzi. Tedy
+hra se hraje na šachovnici s 64mi poli a vyhrává ten hráč, který první "sežere" všechny
+kameny protivníka. Hráči mají kameny na černých polích šachovnice a smí se pohybovat pouze
+diagonálně, tedy pouze po černých polích. Kamenů jsou dva druhy: pěšák a král.
+
+\section{Pohyb}
+Pěšák smí pouze o jedno políčko v před. Král smí o jedno políčko všemi směry. Tah hráče
+končí po posunutí kamene.
+
+TODO obrazek tahu
+
+\section{Braní kamenů protivníka}
+Pokud v cestě ku předu stojí kámen protivníka a je za ním prázdné políčko, tak jak král, tak pěšák 
+přeskočí kámen protivníka na políčko za něj a kámen protivníka odstraní. Stále platí, že
+pěšák smí brát pouze ku před, zatímco král může brát všemi směry.
+
+TODO obrazek zrani
+
+\section{Pohyb}
+Pokud po tom, co hráč vzal protivníkův kámen, je v cestě další protivníkův kámen, za kterým
+je volné místé, hráč táhne znovu a vezme tím tak 2 protívníkovy kameny v jednom tahu. Toto
+je možné opakovat pokud je splněna ta podmínka, že v blízkosti kamene je protivníkův kámen
+a za ním je volné políčko.
+
+TODO: obrazek retezoveho brani
+%
+%
+%
+\chapter{Popis protokolu}
+Protokol je posílán jako nešifrovaný text. Jednotlivé části jsou oddělené znakem '$|$'.
+	\section{Obecný tvar zpráv}
+Obecný tvar zprávy je:
+\begin{itemize}
+	\item ID\_hráče$|$INSTRUKCE$|$parameter$|$parametr...
+\end{itemize}
+
+\noindent Obecný tvar odpovědi serveru je: 
+
+\begin{itemize}
+	\item ID\_hráče$|$VYSLEDEK$|$kód\_výsledku$|$zpráva$|$parameter$|$parametr...
+\end{itemize}
+
+
+\noindent VYSLEDEK nabývá hodnok "OK" a "ERROR", lze ho považovat za typ instrukce.
+
+\section{Popis instrukcí a odpovědí}
+%
+%
+%
+\subsection{CONNECT}
+\subsubsection{Popis}
+Připojí hráče k serveru. Pokud první zpráva od nového připojení není CONNECT,
+tak server připojení odpojí. Při zadání ID hráče slouží k znovu připojení k serveru.\\
+
+\subsubsection{Přesné formáty}
+\begin{itemize}
+	\item 0$|$CONNECT$|$username - hráč se připojuje poprvé
+		\begin{itemize}
+			\item username - jméno hráče
+		\end{itemize}
+	\item ID\_hráče$|$CONNECT$|$username - hráč se pokouší znovupřipojit
+		\begin{itemize}
+			\item username - jméno hráče
+		\end{itemize}
+\end{itemize}
+
+\subsubsection{Kódy a zprávy odpovědí}
+\begin{itemize}
+	\item Pozitivní
+		\begin{itemize}
+			\item 201 - Connection success
+			\item 202 - Reconnection success
+		\end{itemize}
+	\item Negativní
+		\begin{itemize}
+			\item 402 -
+			\item 402 -
+		\end{itemize}
+\end{itemize}
+%
+%
+%
+\subsection{CREATE\_LOBBY}
+\subsubsection{Popis}
+Vytvoří nové lobby a přidá hráče, který ho vytvořil jako hráč 1. Hráč 1 má vždy
+bílé kámeny.
+
+\subsubsection{Přesné formáty}
+\begin{itemize}
+	\item ID\_$|$CREATE\_LOBBY$|$lobby\_name
+		\begin{itemize}
+			\item lobby\_name - jméno vytvářené místnosti
+		\end{itemize}
+\end{itemize}
+
+\subsubsection{Kódy a zprávy odpovědí}
+\begin{itemize}
+	\item Pozitivní
+		\begin{itemize}
+			\item 201 - Successfully created lobby
+		\end{itemize}
+	\item Negativní
+		\begin{itemize}
+			\item 402 - Server failed to create lobby
+			\item 403 - Lobby name is too long
+		\end{itemize}
+\end{itemize}
+%
+%
+%
+\subsection{JOIN\_GAME}
+\subsubsection{Popis}
+Připojí hráče do existující místnosti. Připojené hráče nastaví jako hráč 2, který má
+černé kameny. Převede stav hry na stav probíhající.
+
+\subsubsection{Přesné formáty}
+\begin{itemize}
+	\item ID\_hráče$|$JOIN\_GAME$|$lobby\_name
+		\begin{itemize}
+			\item lobby\_name - jméno místnosti pro připojení
+		\end{itemize}
+\end{itemize}
+
+\subsubsection{Kódy a zprávy odpovědí}
+\begin{itemize}
+	\item Pozitivní
+		\begin{itemize}
+			\item 201 - Successfully joined game
+		\end{itemize}
+	\item Negativní
+		\begin{itemize}
+			\item 402 -
+			\item 402 -
+		\end{itemize}
+\end{itemize}
+%
+%
+%
+\subsection{DELETE\_LOBBY}
+\subsubsection{Popis}
+Zruší vytvořené lobby, pokud v něm je pouze zakladatel lobby.
+
+\subsubsection{Přesné formáty}
+\begin{itemize}
+	\item ID\_hráče$|$DELETE\_LOBBY
+\end{itemize}
+
+\subsubsection{Kódy a zprávy odpovědí}
+\begin{itemize}
+	\item Pozitivní
+		\begin{itemize}
+			\item 201 - Lobby deleted
+		\end{itemize}
+	\item Negativní
+		\begin{itemize}
+			\item 402 -
+			\item 402 -
+		\end{itemize}
+\end{itemize}
+%
+%
+%
+\subsection{LOBBY}
+\subsubsection{Popis}
+Požadavek uživatele na získání lobby, dostupných k připojení.
+
+\subsubsection{Přesné formáty}
+\begin{itemize}
+	\item ID\_hráče$|$LOBBY
+\end{itemize}
+
+\subsubsection{Kódy a zprávy odpovědí}
+\begin{itemize}
+	\item Pozitivní
+		\begin{itemize}
+			\item 201 - Available lobbies
+		\end{itemize}
+	\item Negativní
+		\begin{itemize}
+			\item 402 -
+			\item 402 -
+		\end{itemize}
+\end{itemize}
+%
+%
+%
+\subsection{TURN}
+\subsubsection{Popis}
+Provede tah nebo sekvenci tahů. Kontaktuje protivníka o hráčovo tazích.
+
+\subsubsection{Přesný formáty}
+\begin{itemize}
+	\item ID\_hráče$|$TURN$|$paramter\_1$|$parametr\_2$|$...$|$parameter\_30
+		\begin{itemize}
+			\item parametr\_1 - pozice kamene
+			\item parametr\_x - index (pozice) lokace tahu
+		\end{itemize}
+\end{itemize}
+
+\subsubsection{Kódy a zprávy odpovědí}
+\begin{itemize}
+	\item Pozitivní
+		\begin{itemize}
+			\item 202 - Turn Successful
+		\end{itemize}
+	\item Negativní
+		\begin{itemize}
+			\item 402 -
+			\item 402 -
+		\end{itemize}
+\end{itemize}
+%
+%
+%
+\subsection{DISCONNECT}
+\subsubsection{Popis}
+Použito když se hráč odpojuje od serveru. Vymaže hráče ze seznamu hráčů.
+
+\subsubsection{Přesný formáty}
+\begin{itemize}
+	\item ID\_hráče$|$DISCONNECT
+\end{itemize}
+
+\subsubsection{Kódy a zprávy odpovědí}
+\begin{itemize}
+	\item Pozitivní
+		\begin{itemize}
+			\item 201 - You were disconnected
+		\end{itemize}
+	\item Negativní
+		\begin{itemize}
+			\item 402 -
+			\item 402 -
+		\end{itemize}
+\end{itemize}
+%
+%
+%
+\subsection{OPPONENT\_JOIN}
+\subsubsection{Popis}
+Instrukce, kterou posílá server klientovi (protivníkovi hráče, který poslal instrukci JOIN\_GAME),
+informující ho o tahu protivníka. Instrukce musí být potvrzena pomocí "OK" nebo "ERROR" odpovědi od klienta.
+
+\subsubsection{Přesný formáty}
+\begin{itemize}
+	\item ID\_protivníka$|$OPPONENT\_JOIN$|$kód$|$zpárva$|$username
+		\begin{itemize}
+			\item kód - jedná se o zprávu serveru, takže klient očekává kód operace
+			\item zpráva - podobně jako kód je očekávána klientem
+			\item username - jméno hráče volající JOIN\_GAME
+		\end{itemize}
+\end{itemize}
+
+\subsubsection{Kódy a zprávy odpovědí}
+\begin{itemize}
+	\item Pozitivní
+		\begin{itemize}
+			\item 201 - Successfully joined game
+		\end{itemize}
+	\item Negativní
+		\begin{itemize}
+			\item 402 -
+			\item 402 -
+		\end{itemize}
+	\item Parametr - odpověď má za parametr jméno protivníka
+\end{itemize}
+%
+%
+%
+\subsection{OPPONENT\_TURN}
+\subsubsection{Popis}
+Pošle klientovi tah protivníka. Potvrzována pomocí "OK" nebo "ERROR".
+
+\subsubsection{Přesný formáty}
+\begin{itemize}
+	\item ID\_hráče$|$OPPONENT\_TURN$|$parametr\_1$|$parametr\_2$|$...
+\end{itemize}
+
+\subsubsection{Kódy a zprávy odpovědí}
+\begin{itemize}
+	\item Pozitivní
+		\begin{itemize}
+			\item 201 - Opponent moved
+		\end{itemize}
+	\item Negativní
+		\begin{itemize}
+			\item 402 -
+			\item 402 -
+		\end{itemize}
+\end{itemize}
+
+%
+\chapter{Programátorská dokumentace}
+%
+\chapter{Uživatelská dokumentace}
+\chapter{Závěr}
+
+\end{document}

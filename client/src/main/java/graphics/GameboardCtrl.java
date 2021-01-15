@@ -308,6 +308,8 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
         } else {
             System.out.println("Out of moves. Sending to server");
 
+            unHighlightMoves(); //if user chooses not to move in a sequence, possible sequence stays highlighted
+
             try {
                 getPaneWithID(clicked).getChildren().get(0).setOnMouseClicked(null);
             } catch (IndexOutOfBoundsException e) {

@@ -219,43 +219,75 @@ public class Client implements Runnable {
                 initGUIBoard(msg);
             }
         } else if(msg.getInst() == Instruction.OPPONENT_TURN) {
-            if(auto.validateTransition(Action.TURN)) {
-                for(int i = 1; i < msg.getParams().length; i++) {
-                    try {
-                        int from = Integer.parseInt(msg.getParams()[i - 1]);
-                        int to = Integer.parseInt(msg.getParams()[i]);
+            if (msg.getResponseCode() == 201) {
+                if (auto.validateTransition(Action.TURN)) {
+                    for (int i = 1; i < msg.getParams().length; i++) {
+                        try {
+                            int from = Integer.parseInt(msg.getParams()[i - 1]);
+                            int to = Integer.parseInt(msg.getParams()[i]);
 
-                        game.moveOpponentFromTo(from, to);
-                    } catch (NumberFormatException e) {
-                        System.err.println("Failed to convert int to string");
+                            game.moveOpponentFromTo(from, to);
+                        } catch (NumberFormatException e) {
+                            System.err.println("Failed to convert int to string");
+                        }
                     }
+
+                    if (!game.getOpponentJumpedOver().isEmpty()) {
+                        for (int i : game.getOpponentJumpedOver()) {
+                            game.getGameBoard()[i] = 0;
+                            game.removeIndexFromStones(i);
+                        }
+                    }
+
+                    Platform.runLater(() -> {
+                        if (!game.getOpponentJumpedOver().isEmpty()) {
+                            ((GameboardCtrl) currentCtrl).removeStones(game.getOpponentJumpedOver());
+                        }
+
+                        ((GameboardCtrl) currentCtrl).moveOpponentStones(msg.getParams());
+                        ((GameboardCtrl) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
+                    });
+
+                    game.printGameBoard();
+                    auto.makeTransition(Action.TURN);
+                    sendReply(true);
+                } else {
+                    status.setResponseText("Automaton is in wrong state");
                 }
+            } else if(msg.getResponseCode() == 204) {
+                if (getAutomaton().validateTransition(Action.LOSE)) {
+                    auto.makeTransition(Action.LOSE);
 
-                if(!game.getOpponentJumpedOver().isEmpty()) {
-                    for(int i : game.getOpponentJumpedOver()) {
-                        game.getGameBoard()[i] = 0;
-                        game.removeIndexFromStones(i);
-                    }
+                    Platform.runLater(() -> {
+                        currentCtrl.genericSetScene("main_menu_connected.fxml");
+                        status.setResponseText(msg.getResponseText());
+                    });
+
+                    sendReply(true);
+                } else {
+                    status.setResponseText("Automaton is in wrong state");
                 }
+            } else if(msg.getResponseCode() == 203) {
+                //there is currently no real difference between "win" and "lose" transitions, but could server for
+                //stat logging
+                if (getAutomaton().validateTransition(Action.WIN)) {
+                    auto.makeTransition(Action.WIN);
 
-                Platform.runLater(() -> {
-                    if(!game.getOpponentJumpedOver().isEmpty()) {
-                        ((GameboardCtrl) currentCtrl).removeStones(game.getOpponentJumpedOver());
-                    }
+                    Platform.runLater(() -> {
+                        currentCtrl.genericSetScene("main_menu_connected.fxml");
+                        status.setResponseText(msg.getResponseText());
+                    });
 
-                    ((GameboardCtrl) currentCtrl).moveOpponentStones(msg.getParams());
-                    ((GameboardCtrl) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
-                });
-
-                game.printGameBoard();
-                auto.makeTransition(Action.TURN);
-                sendReply(true);
+                    sendReply(true);
+                } else {
+                    status.setResponseText("Automaton is in wrong state");
+                }
             } else {
-                status.setResponseText("Automaton is in wrong state");
+                status.setResponseText("Recieved unknown code for OPPONENT_TURN");
             }
-        } else {
-            System.err.println("Server shouldn't say anything else by it self");
         }
+
+
     }
 
     /**
@@ -613,42 +645,70 @@ public class Client implements Runnable {
      * @param reply server message
      */
     private void handleTurn(TcpMessage reply) {
-        if(reply.getInst() == Instruction.OK) {
-            if(auto.validateTransition(Action.TURN)) {
-                try {
-                    for (int i = 1; i < requestPar.size(); i++) {
-                        int from = Integer.parseInt(requestPar.get(i - 1));
-                        int to = Integer.parseInt(requestPar.get(i));
+        if (reply.getInst() == Instruction.OK) {
+            if (reply.getResponseCode() == 202) {
+                if (auto.validateTransition(Action.TURN)) {
+                    try {
+                        for (int i = 1; i < requestPar.size(); i++) {
+                            int from = Integer.parseInt(requestPar.get(i - 1));
+                            int to = Integer.parseInt(requestPar.get(i));
 
-                        System.out.println("Moving form " + requestPar.get(i - 1) + " to " + requestPar.get(i));
-                        game.moveFromTo(from, (to - from));
+                            System.out.println("Moving form " + requestPar.get(i - 1) + " to " + requestPar.get(i));
+                            game.moveFromTo(from, (to - from));
+                        }
+                    } catch (NumberFormatException e) {
+                        System.err.println("Failed to convert number");
                     }
-                } catch (NumberFormatException e) {
-                    System.err.println("Failed to convert number");
+
+                    if (!game.getJumpedOver().isEmpty()) {
+                        for (int i : game.getJumpedOver()) {
+                            game.getGameBoard()[i] = 0;
+                        }
+                    }
+
+                    game.updatePlayerStoneIndexes();
+
+                    Platform.runLater(() -> {
+                        if (!game.getJumpedOver().isEmpty()) {
+                            ((GameboardCtrl) currentCtrl).removeStones(game.getJumpedOver());
+                        }
+
+                        ((GameboardCtrl) currentCtrl).moveStone();
+                        ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
+                    });
+
+                    game.printGameBoard();
+
+                    auto.makeTransition(Action.TURN);
+                } else {
+                    status.setResponseText("Automaton validation failed");
                 }
+            } else if(reply.getResponseCode() == 203) {
+                if(getAutomaton().validateTransition(Action.WIN)) {
+                    Platform.runLater(() -> {
+                        currentCtrl.genericSetScene("main_menu_connected.fxml");
+                        status.setResponseText(reply.getResponseText());
+                    });
 
-                if(!game.getJumpedOver().isEmpty()) {
-                    for(int i : game.getJumpedOver()) {
-                        game.getGameBoard()[i] = 0;
-                    }
+                    auto.makeTransition(Action.WIN);
+                } else {
+                    status.setResponseText("Automaton is in wrong state");
                 }
+            } else if(reply.getResponseCode() == 204) {
+                //there is currently no real difference between "win" and "lose" transitions, but could server for
+                //stat logging
+                if(getAutomaton().validateTransition(Action.LOSE)) {
+                    auto.makeTransition(Action.LOSE);
 
-                game.updatePlayerStoneIndexes();
-
-                Platform.runLater(() -> {
-                    if(!game.getJumpedOver().isEmpty()) {
-                        ((GameboardCtrl) currentCtrl).removeStones(game.getJumpedOver());
-                    }
-
-                    ((GameboardCtrl) currentCtrl).moveStone();
-                    ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
-                });
-
-                game.printGameBoard();
-
-                auto.makeTransition(Action.TURN);
+                    Platform.runLater(() -> {
+                        currentCtrl.genericSetScene("main_menu_connected.fxml");
+                        status.setResponseText(reply.getResponseText());
+                    });
+                } else {
+                    status.setResponseText("Automaton is in wrong state");
+                }
             }
-        } else if(reply.getInst() == Instruction.ERROR) {
+        } else if (reply.getInst() == Instruction.ERROR) {
             status.setResponseText(reply.getResponseText());
 
             Platform.runLater(() -> {
@@ -658,6 +718,7 @@ public class Client implements Runnable {
         } else {
             status.setResponseText("Unknown response");
         }
+
 
         requestPar.clear();
     }

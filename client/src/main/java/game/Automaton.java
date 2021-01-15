@@ -52,9 +52,12 @@ public class Automaton {
         transitions[State.CHOOSING_LOBBY.getCode()]     [Action.START_O.getCode()]          = State.OPPONENT_TURN;
 
         transitions[State.TURN.getCode()]               [Action.TURN.getCode()]             = State.OPPONENT_TURN;
+        transitions[State.TURN.getCode()]               [Action.WIN.getCode()]              = State.CONNECTED;
+        transitions[State.TURN.getCode()]               [Action.LOSE.getCode()]             = State.CONNECTED;
 
         transitions[State.OPPONENT_TURN.getCode()]      [Action.TURN.getCode()]             = State.TURN;
-
+        transitions[State.OPPONENT_TURN.getCode()]      [Action.WIN.getCode()]             = State.CONNECTED;
+        transitions[State.OPPONENT_TURN.getCode()]      [Action.LOSE.getCode()]             = State.CONNECTED;
 
         /* END OF TRANSITION INITIALIZATION */
 
