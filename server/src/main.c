@@ -18,7 +18,7 @@ void print_help() {
 	printf("Usage:\n\trun_server [options]\n");
 	printf("OPTIONS:\n");
 	printf("-h\n\tPrints this help.\n");
-	printf("-i IP\n\tServer uses IP as its server adress.\n");
+	printf("-a IP\n\tServer uses IP as its server adress.\n");
 	printf("-p PORT\n\tServer uses PORT as its port.\n");
 	printf("-c NUM\n\tServer allows a maximum of NUM connections.\n");
 }
@@ -32,7 +32,7 @@ int process_argument(char* sw, char* val) {
 		return 1;
 	}
 
-	if(!strcmp(sw, "-i")) {
+	if(!strcmp(sw, "-a")) {
 		ip = val;
 	} else if(!strcmp(sw, "-p")) {
 		port = strtol(val, NULL, 10);

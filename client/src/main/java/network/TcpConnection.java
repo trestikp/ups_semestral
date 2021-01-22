@@ -1,7 +1,5 @@
 package network;
 
-import javafx.scene.Parent;
-
 import java.io.*;
 import java.net.Socket;
 
@@ -70,16 +68,9 @@ public class TcpConnection {
         }
     }
 
-    public void sendMessage(TcpMessage msg) {
-        try {
-            writer.print(msg.toString());
-            writer.flush();
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     public void sendMessageTxt(String msg) {
+        System.out.println("Sending: " + msg);
+
         try {
             writer.print(msg);
             writer.flush();

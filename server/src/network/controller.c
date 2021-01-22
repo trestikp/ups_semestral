@@ -14,6 +14,7 @@
 	Variable from server.c, see server.c for more
 */
 extern int additionalActions;
+extern int max_con;
 
 /** Player linked list */
 l_link* p_list = NULL;
@@ -30,7 +31,9 @@ int id_counter = 1;
 */
 char* inst_string[INSTRUCTION_COUNT] = {
 	[OPPONENT_JOIN] = "OPPONENT_JOIN",
-	[OPPONENT_TURN] = "OPPONENT_TURN"
+	[OPPONENT_TURN] = "OPPONENT_TURN",
+	[OPPONENT_DISC]	= "OPPONENT_DISC",
+	[PING]		= "PING"
 };
 
 
@@ -121,6 +124,93 @@ int verify_and_load_player(int player_id, int fd, player** p){
 	}
 }
 
+
+/**
+*/
+int delete_game_from_gplaying(game* g) {
+	l_link *prev = NULL, *curr = NULL;
+
+	curr = g_playing;
+
+	while(curr) {
+		if((game*) curr->data == g) {
+			break;
+		}
+
+		prev = curr;
+		curr = curr->next;
+	}
+
+	if(!curr) {
+		return 1;
+	}
+
+	free_game((game*) curr->data);
+	//free(curr->data);
+
+	if(prev) {
+		prev->next = curr->next;
+	} else {
+		//if prev = NULL, its the beginning of the lobby
+		// -> need to change 
+		g_playing = g_playing->next;
+	}
+
+	free(curr);
+
+	return 0;
+}
+
+
+char* do_win(player* winner, game* g, player* p) {
+		char* op_msg;
+
+		g->p1->busy = 0;
+		g->p1->onTop = 0;
+
+		g->p2->busy = 0;
+		g->p2->onTop = 0;
+
+		if(winner == p) {
+			if(p == g->p1) {
+				op_msg = construct_message_with_inst(g->p2->id,
+					inst_string[OPPONENT_TURN], 204, "You lost!");
+
+				send(g->p2->socket, op_msg, sizeof(op_msg), MSG_CONFIRM);
+				//rv = contact_player(g->p2->socket, winner->id, g->p2->id, op_msg);
+			} else {
+				op_msg = construct_message_with_inst(g->p1->id,
+					inst_string[OPPONENT_TURN], 204, "You lost!");
+
+				send(g->p1->socket, op_msg, sizeof(op_msg), MSG_CONFIRM);
+				//rv = contact_player(g->p1->socket, winner->id, g->p1->id, op_msg);
+			}
+
+			delete_game_from_gplaying(g);
+
+			return construct_message(winner->id, 203, "You won!");
+		} else {
+			if(p == g->p1) {
+				op_msg = construct_message_with_inst(g->p2->id,
+					inst_string[OPPONENT_TURN], 203, "You won!");
+
+				send(g->p2->socket, op_msg, sizeof(op_msg), MSG_CONFIRM);
+				//rv = contact_player(g->p2->socket, winner->id, g->p2->id, op_msg);
+			} else {
+				op_msg = construct_message_with_inst(g->p1->id,
+					inst_string[OPPONENT_TURN], 203, "You won!");
+
+				send(g->p1->socket, op_msg, sizeof(op_msg), MSG_CONFIRM);
+				//rv = contact_player(g->p1->socket, winner->id, g->p1->id, op_msg);
+			}
+
+			delete_game_from_gplaying(g);
+
+			return construct_message(winner->id, 204, "You lost!");
+		}
+}
+
+
 /**
 	Initializes a new player with File Descriptor and adds new player to
 	player list.
@@ -188,48 +278,13 @@ int parse_string_to_int(char* str) {
 }
 
 
-/**
-*/
-int delete_game_from_gplaying(game* g) {
-	l_link *prev = NULL, *curr = NULL;
-
-	curr = g_playing;
-
-	while(curr) {
-		if((game*) curr->data == g) {
-			break;
-		}
-
-		prev = curr;
-		curr = curr->next;
-	}
-
-	if(!curr) {
-		return 1;
-	}
-
-	free_game((game*) curr->data);
-	//free(curr->data);
-
-	if(prev) {
-		prev->next = curr->next;
-	} else {
-		//if prev = NULL, its the beginning of the lobby
-		// -> need to change 
-		g_playing = g_playing->next;
-	}
-
-	free(curr);
-
-	return 0;
-}
 
 
 /**
 	Does basic instruction validation. Validates number of tokens (message infromation
 	+ parameters) that are allowed with any instruction.
 */
-int validate_instruction(instruction inst, int token_cnt) {
+int validate_instruction_par_count(instruction inst, int token_cnt) {
 	int params = 0;
 
 	if(token_cnt < 2 || token_cnt > 32) {
@@ -241,7 +296,7 @@ int validate_instruction(instruction inst, int token_cnt) {
 	}
 	
 	switch(inst) {
-		case LOBBY: case PING: case OPPONENT_JOIN: case OPPONENT_TURN:
+		case LOBBY: case PING: case OPPONENT_JOIN: case OPPONENT_TURN: case OPPONENT_DISC:
 		case DELETE_LOBBY: case DISCONNECT:  params = 0; break;
 		case CONNECT: case CREATE_LOBBY: case JOIN_GAME: params = 1; break;
 		case TURN: params = 30; break;
@@ -259,97 +314,6 @@ int validate_instruction(instruction inst, int token_cnt) {
 
 	return 0;
 }
-
-/**
-	TEMP? Handles reply from client to OPPONENT instruction.
-	Return 0 on success and erro number on error.
-*/
-int handle_reply(char* reply, int id) {
-	int token_cnt = 0, parsed_id = -1;
-	char *token, *leftover = NULL;
-	char *parts[2];
-
-	token = strtok(reply, "|");
-
-	do {
-		if(token_cnt >= 32) {
-			printf("Too many tokens!\n"); //TODO logger?
-			break;
-		}
-
-		//netcat sends \n with message
-		if(token[strlen(token) - 1] == '\n') {
-			token[strlen(token) - 1] = 0;
-		}
-
-		parts[token_cnt] = token;
-		token_cnt++;
-	} while((token = strtok(NULL, "|")));
-
-	if(token_cnt != 2) {
-		return 1;
-	}
-
-	parsed_id = strtol(parts[0], &leftover, 10);
-
-	if(leftover == parts[0] || parsed_id < 0 || *leftover != '\0') {
-		printf("Failed to parse ID\n");
-		return 2;
-	}
-
-	if(id != parsed_id) return 3;
-
-	if(!strcmp(parts[1], "OK")) {
-		return 3;
-	} else if(!strcmp(parts[1], "ERROR")) {
-		return 4;
-	} else {
-		return 5;
-	}
-
-	return 0;
-}
-
-
-/**
-	Sends message @op_msg to socket @socket 
-*/
-int contact_player(int socket, int requester, int target, char* op_msg) {
-	//char* msg = NULL;
-	time_t timeout;
-
-	send(socket, op_msg, strlen(op_msg), MSG_CONFIRM);
-
-	free(op_msg);
-
-	char resp[256];
-	int code = 0;
-
-	recv(socket, resp, 255, 0);
-
-	return handle_reply(resp, target);
-
-	/*
-	timeout = time(NULL);
-	while(code != 1 || timeout != (timeout + 30)) {
-		code = recv(socket, resp, 255, 0);
-	}
-	*/
-
-	/*
-	switch(handle_reply(resp, target)) {
-		case 0: msg = construct_message(requester, 201, "Successfully joined game"); break;
-		case 1: msg = construct_message(requester, 404, "Unexpected token count"); break;
-		case 2: msg = construct_message(requester, 404, "Failed to parse ID"); break;
-		case 3: msg = construct_message(requester, 201, "Successfully joined game"); break;
-		case 4: msg = construct_message(requester, 404, "Opponent starting error"); break;
-		case 5: msg = construct_message(requester, 404, "Unrecognized instruction"); break;
-	}
-
-	return msg;
-	*/
-}
-
 
 
 /*****************************************************************************/
@@ -369,15 +333,12 @@ char* connect_my(int* player_id, char* username, int fd) {
 
 	if(!username) {
 		printf("username is NULL??\n");
-		return construct_message(*player_id, 402,
-					      "Username is empty");
+		return construct_message(*player_id, 402, "Username is empty");
 		//return 402;
 	}
 
-	if(!is_username_available(p_list, username)) {
-		//printf("Username already taken, RV: %d\n", rv);
-		return construct_message(*player_id, 403,
-					      "Username already in use");
+	if(!is_username_available(p_list, username) && *player_id == 0) {
+		return construct_message(*player_id, 403, "Username already in use");
 
 		//return 403;
 	}
@@ -399,6 +360,8 @@ char* connect_my(int* player_id, char* username, int fd) {
 		p->username = malloc(strlen(username) * sizeof(char));
 		strcpy(p->username, username);
 		p->id = id_counter;
+		p->last_com = time(NULL);
+
 		id_counter++;
 
 		*player_id = p->id;
@@ -422,13 +385,16 @@ char* connect_my(int* player_id, char* username, int fd) {
 		//if player exists but isn't connect = reconnecting
 		if(p->id == *player_id && p->connected == 0) {
 			printf("Player id %d reconnecting\n", *player_id);
-			return construct_message(*player_id, 202,
-					      "Reconnection success");
+			
+			//TODO append game state to reconnect
+
+			p->connected = 1;
+
+			return construct_message(*player_id, 202, "Reconnection success");
 			//return 202;
 		} else {
 			printf("Player is either already connected or IDs don't match\n");
-			return construct_message(*player_id, 406,
-					      "Is this an attack attempt");
+			return construct_message(*player_id, 406, "Is this an attack attempt");
 			//return 400;
 		}
 	}
@@ -533,6 +499,8 @@ char* delete_lobby(player* p) {
 	Returns message that is sent to player @p
 */
 char* join_game(player* p, char* lobby_name) {
+	char *op_msg, *msg;
+	int rv = 0;
 	game* g = NULL;
 
 	if(strlen(lobby_name) > 127) {
@@ -552,23 +520,17 @@ char* join_game(player* p, char* lobby_name) {
 
 	add_lifo(&g_playing, g);
 
-	char* op_msg = construct_message_with_inst(g->p1->id, inst_string[OPPONENT_JOIN], 201,
+	//contatct opponent
+	op_msg = construct_message_with_inst(g->p1->id, inst_string[OPPONENT_JOIN], 201,
 						   "Opponent connected. Starting");
 	append_parameter(&op_msg, p->username);
+	rv = send(g->p1->socket, op_msg, sizeof(op_msg), MSG_CONFIRM);
 
-	int rv = contact_player(g->p1->socket, p->id, g->p1->id, op_msg);
-	char* msg;
-
-	switch(rv) {
-		case 0: msg = construct_message(p->id, 201, "Successfully joined game"); break;
-		case 1: msg = construct_message(p->id, 404, "Unexpected token count"); break;
-		case 2: msg = construct_message(p->id, 405, "Failed to parse ID"); break;
-		case 3: msg = construct_message(p->id, 201, "Successfully joined game"); break;
-		case 4: msg = construct_message(p->id, 406, "Opponent starting error"); break;
-		case 5: msg = construct_message(p->id, 407, "Unrecognized instruction"); break;
+	if(rv < 0) {
+		return construct_message(p->id, 404, "Failed to contact opponent");
 	}
 
-	//msg = construct_message(p->id, 201, "Successfully joined game");
+	msg = construct_message(p->id, 201, "Successfully joined game");
 	append_parameter(&msg, g->p1->username);
 
 	return msg;
@@ -585,7 +547,7 @@ char* join_game(player* p, char* lobby_name) {
 char* turn(player* p, char* parts[32], int parts_count) {
 	player* winner = NULL;
 	game* g = NULL;
-	int i = 0, rv;
+	int i = 0;
 	int pars[parts_count];
 
 	g = find_game_by_player(g_playing, p);
@@ -623,46 +585,7 @@ char* turn(player* p, char* parts[32], int parts_count) {
 	}
 
 	if((winner =  check_for_victory(g))) {
-		char* op_msg;
-
-		g->p1->busy = 0;
-		g->p1->onTop = 0;
-
-		g->p2->busy = 0;
-		g->p2->onTop = 0;
-
-		if(winner == p) {
-			if(p == g->p1) {
-				op_msg = construct_message_with_inst(g->p2->id,
-					inst_string[OPPONENT_TURN], 204, "You lost!");
-
-				rv = contact_player(g->p2->socket, winner->id, g->p2->id, op_msg);
-			} else {
-				op_msg = construct_message_with_inst(g->p1->id,
-					inst_string[OPPONENT_TURN], 204, "You lost!");
-				rv = contact_player(g->p1->socket, winner->id, g->p1->id, op_msg);
-			}
-
-			delete_game_from_gplaying(g);
-
-			return construct_message(winner->id, 203, "You won!");
-		} else {
-			if(p == g->p1) {
-				op_msg = construct_message_with_inst(g->p2->id,
-					inst_string[OPPONENT_TURN], 203, "You won!");
-
-				rv = contact_player(g->p2->socket, winner->id, g->p2->id, op_msg);
-			} else {
-				op_msg = construct_message_with_inst(g->p1->id,
-					inst_string[OPPONENT_TURN], 203, "You won!");
-				rv = contact_player(g->p1->socket, winner->id, g->p1->id, op_msg);
-			}
-
-			delete_game_from_gplaying(g);
-
-			return construct_message(winner->id, 204, "You lost!");
-
-		}
+		do_win(winner, g, p);
 	}
 
 
@@ -680,9 +603,9 @@ char* turn(player* p, char* parts[32], int parts_count) {
 		}
 		printf("Contanting opponent\n");
 
-		//send(g->p2->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
+		send(g->p2->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
 
-		rv = contact_player(g->p2->socket, p->id, g->p2->id, op_msg);
+		//rv = contact_player(g->p2->socket, p->id, g->p2->id, op_msg);
 		//rv = 0;
 	} else if(g->p2 == p) {
 		char* op_msg = construct_message_with_inst(g->p1->id, inst_string[OPPONENT_TURN], 201, "Opponent moved");
@@ -694,21 +617,24 @@ char* turn(player* p, char* parts[32], int parts_count) {
 			append_parameter(&op_msg, num);
 		}
 
-	printf("Contanting opponent\n");
+		printf("Contanting opponent\n");
 
-		//send(g->p1->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
+		send(g->p1->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
 
-		rv =contact_player(g->p1->socket, p->id, g->p1->id, op_msg);
+		//rv =contact_player(g->p1->socket, p->id, g->p1->id, op_msg);
 		//rv = 0;
 	} else {
 		return construct_message(p->id, 405, "This is not your game");
 	}
 
+	return construct_message(p->id, 202, "Turn successful");
+	/*
 	if(rv == 3 || rv == 0) {
 		return construct_message(p->id, 202, "Turn successful");
 	} else {
 		return construct_message(p->id, 407, "Failed to contact opponent");
 	}
+	*/
 }
 
 
@@ -717,7 +643,7 @@ char* turn(player* p, char* parts[32], int parts_count) {
 	Returns message that is sent to player @p
 */
 char* ping(player* p) {
-	return construct_message(p->id, 201, "Pinging");
+	return construct_message_with_inst(p->id, inst_string[PING], 201, "Pinging");
 }
 
 
@@ -775,6 +701,52 @@ char* disconnect(player* p) {
 /*****************************************************************************/
 
 
+void check_for_disconnects() {
+	l_link* temp = p_list;
+	player* p = NULL;
+	game* g = NULL;
+
+	printf("checking for disconnects \n");
+
+	while(temp) {
+		if((time(NULL) - ((player*) temp->data)->last_com) > 5) {
+			p = (player*) temp->data;
+
+			printf("Player %d lost connection\n", p->id);
+
+			p->connected = 0;
+			if(p->busy) {
+				g = find_game_by_player(g_lobby, p);
+
+				if(!g) {
+					g = find_game_by_player(g_playing, p);
+				}
+
+				if(!g) {
+					printf("ERROR: Player doesn't have game while they are busy\n");
+				} else {
+					char* op_msg;
+
+					if(g->p1 == p) {
+						op_msg = construct_message_with_inst(g->p2->id,
+							inst_string[OPPONENT_DISC], 201, "Opponent disconnected");
+						send(g->p2->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
+					} else {
+						op_msg = construct_message_with_inst(g->p1->id,
+							inst_string[OPPONENT_DISC], 201, "Opponent disconnected");
+						send(g->p1->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
+					}
+
+					free(op_msg);
+				}
+			}
+		}
+
+		temp = temp->next;
+	}
+}
+
+
 /**
 	Parses recieved message, calls appropriate handling function and returns
 	constructed response
@@ -811,6 +783,7 @@ char* handle_message(char *message, int fd) {
 
 	if((rv = verify_and_load_player(parsed_id, fd, &p))) {
 		char* msg = NULL;
+
 		switch(rv) {
 			case 1: msg = construct_message(parsed_id, 400, "Socekts don't match"); break;
 			case 2: msg = construct_message(parsed_id, 400, "Uknown connection"); break;
@@ -825,18 +798,35 @@ char* handle_message(char *message, int fd) {
 	}
 
 	inst = parse_instruction(parts[1]);
-	switch(validate_instruction(inst, token_cnt)) {
-		case 1: return construct_message(parsed_id, 401, "Instruction got too many parameters");
-		case 2: return construct_message(parsed_id, 401, "Unrecognized instruction");
-		case 3: return construct_message(parsed_id, 401, "Unexpected parameter count");
-		case 4: return construct_message(parsed_id, 401, "TURN needs at least 2 parameters");
-		case 5: return construct_message(parsed_id, 401, "Too many parameters for TURN");
+	if((rv = validate_instruction_par_count(inst, token_cnt))) {
+		if(p) {
+			p->strikes++;
+
+			if(p->strikes == 3) {
+				remove_player_with_id(&p_list, p->id);
+
+				return NULL;
+			}
+		}
+		
+		switch(rv) {
+			case 1: return construct_message(parsed_id, 401, "Instruction got too many parameters");
+			case 2: return construct_message(parsed_id, 401, "Unrecognized instruction");
+			case 3: return construct_message(parsed_id, 401, "Unexpected parameter count");
+			case 4: return construct_message(parsed_id, 401, "TURN needs at least 2 parameters");
+			case 5: return construct_message(parsed_id, 401, "Too many parameters for TURN");
+		}	
 	}
+	
 
 	//player not found and used ID = 0 and wasn't trying to CONNECT! -> disconnect from server
 	if(!p && inst != CONNECT) {
 		return NULL;
 	}
+
+	//if player exists, but isn't connected, and instruction isn't CONNECT -> disconnect
+	//doesn't remove player from list, so player can still reconnect with CONNECT
+	if(p && !p->connected && inst != CONNECT)  return NULL;
 
 	switch(inst) {
 		case LOBBY: reply = lobby(p); break;
@@ -848,6 +838,8 @@ char* handle_message(char *message, int fd) {
 		case DISCONNECT: reply = disconnect(p); break;
 		case PING: reply = ping(p); break;
 	}
+
+	if(p) p->last_com = time(NULL);
 
 	/*
 	printf("\n------------------------------\n");

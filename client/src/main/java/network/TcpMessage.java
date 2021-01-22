@@ -59,8 +59,10 @@ public class TcpMessage {
             return false;
         }
 
-        if(inst == Instruction.ERROR) {
+        if(inst == Instruction.INST_ERROR) {
             return false;
+        } else if(inst == Instruction.PING) {
+            return true;
         }
 
         if(responseCode < 200 || responseCode >= 500 || (responseCode >= 300 && responseCode < 400)) {
@@ -71,25 +73,16 @@ public class TcpMessage {
             return false;
         }
 
-        int p = 0;
+        int p;
 
         switch (i) {
-            case CONNECT:
-                boolean reconnecting = true;
-                if(reconnecting) {
-                    p = 1;
-                }
-                break;
-            case QUICK_PLAY: p = 1; break;
+            case QUICK_PLAY: case CONNECT: p = 1; break;
             case TURN: p = 30; break;
+            case LOBBY: p = 512; break; // "random" number, should have limited number of rooms on server
             default: p = 0;
         }
 
-        if(params.length > p) {
-            return false;
-        }
-
-        return true;
+        return params.length <= p;
     }
 
     public int getPlayer_id() {

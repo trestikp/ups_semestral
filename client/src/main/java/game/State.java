@@ -14,7 +14,8 @@ public enum State {
     OPPONENT_TURN   ("opponents turn"   , 7),
     PAUSE           ("pause"            , 8),
     NOT_ALLOWED     ("not allowed"      , 9),
-    END             ("end"              , 10);
+    LOST_CON        ("lost connection"  , 10),
+    END             ("end"              , 11);
 
     private final String name;
     private final int code;

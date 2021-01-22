@@ -12,8 +12,7 @@ int add_player_to_list(l_link *head, player *p) {
 
 /**
 	Find player with @id in list @head. Return NULL if it fails to find player
-*/
-player* find_player_in_list(l_link *head, int id) {
+*/ player* find_player_in_list(l_link *head, int id) {
 	while(head) {
 		if(id == ((player*) head->data)->id) {
 			return ((player*) head->data);
@@ -67,6 +66,29 @@ int is_username_available(l_link *head, char *username) {
 	return 1;
 }
 
+void remove_player_with_id(l_link **head, int id) {
+	l_link *prev = NULL;
+	l_link *temp = *head;
+
+	while(temp) {
+		if(((player*) temp->data)->id == id) {
+			free_player((player*) temp->data);
+			break;
+		}
+
+		prev = temp;
+		temp = temp->next;
+	}
+
+	if(prev) {
+		prev->next = temp->next;
+	} else {
+		*head = (*head)->next;		
+	}
+
+	free(temp);
+}
+
 /**
 	Allocates player structure memory and initializes it with default values.
 */
@@ -81,6 +103,7 @@ player* init_player(int fd) {
 	new->busy = 0;
 	new->onTop = 0;
         new->username = NULL;
+	new->last_com = time(NULL);
         
         return new;	
 }

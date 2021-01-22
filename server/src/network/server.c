@@ -93,6 +93,10 @@ int run_server(char* ip, int port) {
 	socklen_t addr_len;
 	struct sockaddr_in client_socket;
 	fd_set clients, tests;
+	time_t last_check = time(NULL);
+
+	struct timeval *timeout = calloc(1, sizeof(struct timeval));
+	timeout->tv_sec = 5;
 
 	ss = create_server_socket(ip, port);
 
@@ -112,9 +116,10 @@ int run_server(char* ip, int port) {
 
 		tests = clients;
 		errno = 0;
-		rv = select(FD_SETSIZE, &tests, NULL, NULL, NULL);
+		rv = select(FD_SETSIZE, &tests, NULL, NULL, timeout);
 
 		if(rv < 0) {
+			printf("Ending with FD_SET select error\n"); //TODO
 			if(errno == EINTR) {
 				printf("FD_SET interrupt error. Closing server.\n");
 				return 2;
@@ -147,8 +152,9 @@ int run_server(char* ip, int port) {
 							FD_CLR(i, &clients);
 							continue;
 						}
+
 						printf(">>> RESPONSE: %s\n", response);
-										//  MSG_DONTWAIT?
+
 						int rv = send(i, response, strlen(response), MSG_CONFIRM);
 
 						if(rv == -1) printf("Failed to send response");
@@ -161,7 +167,6 @@ int run_server(char* ip, int port) {
 
 						additionalActions = 0;
 					} else {
-						//printf("Client is gone?\n");
 						//TODO check if client was in-game -> wait for reconnect/ remove game
 						close(i);
 						FD_CLR(i, &clients);
@@ -171,6 +176,12 @@ int run_server(char* ip, int port) {
 		}
 
 		memset(&client_socket, 0, sizeof(struct sockaddr_in));
+
+		if((time(NULL) - last_check) > 5) {
+			check_for_disconnects();
+			
+			last_check = time(NULL);
+		}
 
 		sleep(1);
 	}
