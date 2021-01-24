@@ -8,8 +8,8 @@ public enum Instruction {
     PING            ("PING"         , 3),
     DISCONNECT      ("DISCONNECT"   , 4),
     CREATE_LOBBY    ("CREATE_LOBBY" , 5),
-    QUICK_PLAY      ("QUICK_PLAY"   , 6),
-    CANCEL_QUICK    ("CANCEL_QUICK" , 7),
+    QUICK_PLAY      ("QUICK_PLAY"   , 6), //not used
+    CANCEL_QUICK    ("CANCEL_QUICK" , 7), //not used
     DELETE_LOBBY    ("DELETE_LOBBY" , 8),
     LOBBY           ("LOBBY"        , 9),
     OPPONENT_JOIN   ("OPPONENT_JOIN", 10),

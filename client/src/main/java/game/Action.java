@@ -17,6 +17,7 @@ public enum Action {
     INVALID_IN  ("invalid_input"    , 10),
     WIN         ("win"              , 11),
     LOSE        ("lose"             , 12),
+    END         ("end"              , 13),
     PAUSE       ("pause"            , 100);
 //    CONNECT         ("connect"              , 0),
 //    //REJECT          ("reject_connection"    , 1),

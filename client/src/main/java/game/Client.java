@@ -63,11 +63,12 @@ public class Client implements Runnable {
     private StatusBar status;
 
     private long lastCommunication;
-    private long lastPing;
-    private State archivedState;
+    private long lastReconnectAttempt;
     private boolean CONNECTED = false;
     private boolean pingResponse = true;
+    private boolean wasConnected = false;
 
+    private int strikes = 0;
 
     /**
      * Constructor
@@ -99,19 +100,48 @@ public class Client implements Runnable {
 //            if(connection != null && connection.getSoc() != null && connection.getSoc().isConnected()) {
             updateStatusElements();
 
+//            System.out.println("inst: " + (inst == null ? "null" : inst.getName()) + "  -  " + waitingForReply);
+
+            if(!waitingForReply) {
+                if(inst != null) {
+//                        System.out.println("Sending request: " + inst.getName());
+
+                    boolean rv = sendRequest(inst);
+
+                    status.setResponseText("Waiting for server response");
+
+                    if(rv) {
+                        waitingForReply = true;
+                    } else {
+                        //TODO failed to send request
+                        handleError(inst);
+
+                        inst = null;
+                    }
+                }
+            }
+
             if(isClientConnected()) { //existing socket
                 msg = connection.recieveMessage();
 
 //                System.err.println("CONNECTED: " + CONNECTED);
 
                 if(msg != null) {
-                    if(!msg.validateTcpMessage(inst)) {
-                        //TODO strike or disconnect
-                        status.setResponseText("Failed to parse received message");
-                        continue;
+                    if(msg.getCreationError()) {
+                        status.setResponseText("Failed to create message");
+
+                        doStrikeOrDisconnect();
                     }
 
                     if (msg.getInst() == Instruction.OK || msg.getInst() == Instruction.ERROR) {
+                        if(!msg.validateTcpMessage(inst)) {
+                            status.setResponseText("Failed to parse received message");
+
+                            doStrikeOrDisconnect();
+
+                            continue;
+                        }
+
                         if(waitingForReply) {
                             handleRequest(msg);
 
@@ -122,16 +152,22 @@ public class Client implements Runnable {
                             status.setResponseText("Reply not expected");
                         }
                     } else {
+                        if(!msg.validateTcpMessage(msg.getInst())) {
+                            status.setResponseText("Failed to parse received message");
+
+                            doStrikeOrDisconnect();
+
+                            continue;
+                        }
+
                         handleServerMessage(msg);
                     }
 
                     lastCommunication = System.currentTimeMillis();
-                    lastPing = lastCommunication;
                 } else {
                     if(CONNECTED) {
                         if((System.currentTimeMillis() - lastCommunication) > 5000) {
                             System.err.println("Lost communication");
-                            //TODO set "lost connection to server"
 
                             Platform.runLater(() -> {
                                 if(currentCtrl instanceof GameboardCtrl) {
@@ -139,51 +175,64 @@ public class Client implements Runnable {
                                 }
                             });
 
-//                        if(!CONNECTED && connection != null) {
-//                            setInstruction(Instruction.CONNECT);
-//                        }
-
-//                        connection.close();
-
+                            connection.close();
+                            connection = null;
                             CONNECTED = false;
 
-                            archivedState = auto.getGameState();
                             auto.setGameState(State.LOST_CON);
                             status.setResponseText("Cannot contact server. Reconnecting");
+
+                            pingResponse = true;
                         }
                     } else {
-//                        System.err.println("Setting CONNECT for reconnection");
-
-                        setInstruction(Instruction.CONNECT);
-                        pingResponse = true;
-                        //TODO attempt reconnect
-                    }
-
-                }
-
-                if(!waitingForReply) {
-                    if(inst != null) {
-                        System.out.println("Sending request: " + inst.getName());
-
-                        boolean rv = sendRequest(inst);
-
-                        status.setResponseText("Waiting for server response");
-
-                        if(rv) {
-                            waitingForReply = true;
-                        } else {
-                            //TODO failed to send request
-                            handleError(inst);
-
-                            inst = null;
+                        if(wasConnected && (System.currentTimeMillis() - lastReconnectAttempt) > 5000) {
+                            //reconnection attempt might have established connection but failed to CONNECT
+                            if(connection != null) {
+                                connection.close();
+                                connection = null;
+                            }
                         }
                     }
                 }
 
-                if ((System.currentTimeMillis() - lastPing) > 1000 && CONNECTED && pingResponse) {
+//                if(!waitingForReply) {
+//                    if(inst != null) {
+////                        System.out.println("Sending request: " + inst.getName());
+//
+//                        boolean rv = sendRequest(inst);
+//
+//                        status.setResponseText("Waiting for server response");
+//
+//                        if(rv) {
+//                            waitingForReply = true;
+//                        } else {
+//                            //TODO failed to send request
+//                            handleError(inst);
+//
+//                            inst = null;
+//                        }
+//                    }
+//                }
+
+                if ((System.currentTimeMillis() - lastCommunication) > 1000 && CONNECTED &&
+                        pingResponse && inst == null) {
                     sendPing();
                 }
             } else {
+//                System.err.println("No connection. Reconnecting?");
+
+                if((System.currentTimeMillis() - lastReconnectAttempt) > 5000 && wasConnected) {
+                    setInstruction(Instruction.CONNECT);
+
+                    //TODO? reset move sequence?
+                } else {
+                    if(!CONNECTED) {
+                        inst = null;
+                        waitingForReply = false;
+                    }
+                }
+
+
 //                System.err.println("No connection. Waiting for new one");
 
                 //TODO attempt reconnect
@@ -226,11 +275,12 @@ public class Client implements Runnable {
     /**
      * Creates connection for application to start communication
      */
-    public void establishConnection() {
-        if(connection != null) {
+    public boolean establishConnection() {
+        if(connection != null && CONNECTED) {
             System.err.println("Connection already exists");
             status.setResponseText("Connection already exists");
-            return;
+
+            return false;
         }
 
         connection = new TcpConnection(host, port);
@@ -239,19 +289,24 @@ public class Client implements Runnable {
             System.err.println("Failed to create socket");
             status.setResponseText("Failed to create socket");
             connection = null;
-            return;
+
+            return false;
         }
 
         if(!connection.getSoc().isConnected()) {
             System.err.println("Created socket but can't connect");
             status.setResponseText("Created socket but can't connect");
             connection = null;
+
+            return false;
         }
 
         saveConnectionToFile();
 
         //must be set to reasonable time when connection starts
         lastCommunication = System.currentTimeMillis();
+
+        return true;
     }
 
     private void closeConnection() {
@@ -363,40 +418,52 @@ public class Client implements Runnable {
                 } else {
                     status.setResponseText("Automaton is in wrong state");
                 }
-            } else if(msg.getResponseCode() == 204) {
-                if (getAutomaton().validateTransition(Action.LOSE)) {
-                    auto.makeTransition(Action.LOSE);
-
+            } else if(msg.getResponseCode() == 203 || msg.getResponseCode() == 204) {
+                if (getAutomaton().validateTransition(Action.END)) {
                     Platform.runLater(() -> {
                         currentCtrl.genericSetScene("main_menu_connected.fxml");
                         status.setResponseText(msg.getResponseText());
                     });
 
-//                    sendReply(true);
-                } else {
-                    status.setResponseText("Automaton is in wrong state");
-                }
-            } else if(msg.getResponseCode() == 203) {
-                //there is currently no real difference between "win" and "lose" transitions, but could server for
-                //stat logging
-                if (getAutomaton().validateTransition(Action.WIN)) {
-                    auto.makeTransition(Action.WIN);
-
-                    Platform.runLater(() -> {
-                        currentCtrl.genericSetScene("main_menu_connected.fxml");
-                        status.setResponseText(msg.getResponseText());
-                    });
-
-//                    sendReply(true);
+                    auto.makeTransition(Action.END);
                 } else {
                     status.setResponseText("Automaton is in wrong state");
                 }
             } else {
-                status.setResponseText("Recieved unknown code for OPPONENT_TURN");
+                status.setResponseText("Received unknown code for OPPONENT_TURN");
             }
+//            else if(msg.getResponseCode() == 204) {
+//                if (getAutomaton().validateTransition(Action.LOSE)) {
+//                    auto.makeTransition(Action.LOSE);
+//
+//                    Platform.runLater(() -> {
+//                        currentCtrl.genericSetScene("main_menu_connected.fxml");
+//                        status.setResponseText(msg.getResponseText());
+//                    });
+//
+////                    sendReply(true);
+//                } else {
+//                    status.setResponseText("Automaton is in wrong state");
+//                }
+//            } else if(msg.getResponseCode() == 203) {
+//                //there is currently no real difference between "win" and "lose" transitions, but could server for
+//                //stat logging
+//                if (getAutomaton().validateTransition(Action.WIN)) {
+//                    auto.makeTransition(Action.WIN);
+//
+//                    Platform.runLater(() -> {
+//                        currentCtrl.genericSetScene("main_menu_connected.fxml");
+//                        status.setResponseText(msg.getResponseText());
+//                    });
+//
+////                    sendReply(true);
+//                } else {
+//                    status.setResponseText("Automaton is in wrong state");
+//                }
+//            } else {
+//                status.setResponseText("Recieved unknown code for OPPONENT_TURN");
+//            }
         } else if(msg.getInst() == Instruction.PING) {                                                          //PING
-            lastPing = System.currentTimeMillis();
-            lastCommunication = lastPing;
             pingResponse = true;
         } else if(msg.getInst() == Instruction.OPPONENT_DISC) {                                         //OPPONENT_DISC
             //TODO set opponent disconnected
@@ -455,12 +522,20 @@ public class Client implements Runnable {
     private void sendConnect() {
         StringBuilder sb = new StringBuilder();
 
+        if(!establishConnection()) {
+//            status.setResponseText("Failed to establish connection");
+            System.out.println("Failed to establish connection");
+            return;
+        }
+
         sb.append(clientID);
         sb.append("|");
         sb.append(Instruction.CONNECT.getName());
         sb.append("|");
         sb.append(username);
         sb.append('\n');
+
+        if(clientID > 0) lastReconnectAttempt = System.currentTimeMillis();
 
         connection.sendMessageTxt(sb.toString());
     }
@@ -609,8 +684,6 @@ public class Client implements Runnable {
         connection.sendMessageTxt(sb.toString());
 
         pingResponse = false;
-        // TODO remove, temp
-        lastPing = System.currentTimeMillis();
     }
 
 /*---------------------------------------------------------------------------------------------------------------------|
@@ -632,6 +705,7 @@ public class Client implements Runnable {
                     auto.makeTransition(Action.CONNECT);
 
                     CONNECTED = true;
+                    wasConnected = true;
 
                     Platform.runLater(() -> {
                         currentCtrl.genericSetScene("main_menu_connected.fxml");
@@ -652,8 +726,21 @@ public class Client implements Runnable {
             }
         } else if(reply.getInst() == Instruction.ERROR) {
             status.setResponseText(reply.getResponseText());
+
+            //if CONNECT fails, close connection (no strikes)
+            if(connection != null) {
+                connection.close();
+                connection = null;
+                CONNECTED = false;
+            }
         } else {
-            status.setResponseText("Unknown response");
+            if(connection != null) {
+                connection.close();
+                connection = null;
+                CONNECTED = false;
+            }
+
+            status.setResponseText("Unknown response, closing connection");
         }
     }
 
@@ -834,31 +921,45 @@ public class Client implements Runnable {
                 } else {
                     status.setResponseText("Automaton validation failed");
                 }
-            } else if(reply.getResponseCode() == 203) {
-                if(getAutomaton().validateTransition(Action.WIN)) {
+            } else if(reply.getResponseCode() == 203 || reply.getResponseCode() == 204) {
+                if(getAutomaton().validateTransition(Action.END)) {
                     Platform.runLater(() -> {
                         currentCtrl.genericSetScene("main_menu_connected.fxml");
                         status.setResponseText(reply.getResponseText());
                     });
 
-                    auto.makeTransition(Action.WIN);
+                    auto.makeTransition(Action.END);
                 } else {
                     status.setResponseText("Automaton is in wrong state");
                 }
-            } else if(reply.getResponseCode() == 204) {
-                //there is currently no real difference between "win" and "lose" transitions, but could server for
-                //stat logging
-                if(getAutomaton().validateTransition(Action.LOSE)) {
-                    auto.makeTransition(Action.LOSE);
-
-                    Platform.runLater(() -> {
-                        currentCtrl.genericSetScene("main_menu_connected.fxml");
-                        status.setResponseText(reply.getResponseText());
-                    });
-                } else {
-                    status.setResponseText("Automaton is in wrong state");
-                }
+            } else {
+                status.setResponseText("Unknown response code");
             }
+//            else if(reply.getResponseCode() == 203) {
+//                if(getAutomaton().validateTransition(Action.WIN)) {
+//                    Platform.runLater(() -> {
+//                        currentCtrl.genericSetScene("main_menu_connected.fxml");
+//                        status.setResponseText(reply.getResponseText());
+//                    });
+//
+//                    auto.makeTransition(Action.WIN);
+//                } else {
+//                    status.setResponseText("Automaton is in wrong state");
+//                }
+//            } else if(reply.getResponseCode() == 204) {
+//                //there is currently no real difference between "win" and "lose" transitions, but could server for
+//                //stat logging
+//                if(getAutomaton().validateTransition(Action.LOSE)) {
+//                    auto.makeTransition(Action.LOSE);
+//
+//                    Platform.runLater(() -> {
+//                        currentCtrl.genericSetScene("main_menu_connected.fxml");
+//                        status.setResponseText(reply.getResponseText());
+//                    });
+//                } else {
+//                    status.setResponseText("Automaton is in wrong state");
+//                }
+//            }
         } else if (reply.getInst() == Instruction.ERROR) {
             status.setResponseText(reply.getResponseText());
 
@@ -933,8 +1034,12 @@ public class Client implements Runnable {
     public void setUsername(String username) {
         this.username = username;
 
-        status.clientNameLabel.setText("You: " + username);
-        status.clientNameLabel.setVisible(true);
+        if(username == null) {
+            status.clientNameLabel.setVisible(false);
+        } else {
+            status.clientNameLabel.setText("You: " + username);
+            status.clientNameLabel.setVisible(true);
+        }
     }
 
     /**
@@ -1138,6 +1243,22 @@ public class Client implements Runnable {
             if(!rv) {
                 status.setResponseText("Failed to delete connection file");
             }
+        }
+    }
+
+    private void doStrikeOrDisconnect() {
+        if(CONNECTED && strikes < 3) {
+            System.err.println("Strike " + strikes);
+            strikes++;
+        } else { //if user isn't CONNECTED, disconnect immediately without strikes
+            connection.close();
+            connection = null;
+            CONNECTED = false;
+
+            System.err.println("Forcefully closing connection");
+            status.setResponseText("Suspicious connection. Closing");
+
+            deleteConnectionFile();
         }
     }
 }

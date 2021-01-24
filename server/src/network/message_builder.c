@@ -14,8 +14,7 @@ int append_parameter(char** message, char* par) {
 		char* temp = realloc(*message, msg_len + DEFAULT_SIZE);
 
 		if(!temp) {
-			printf("Failed to extend message size to append ");
-			printf("parameter\n");
+			printf("Failed to extend message size to append parameter\n");
 			return 1;
 		} else {
 			*message = temp;

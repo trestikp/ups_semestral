@@ -56,8 +56,12 @@ public class Automaton {
         transitions[State.TURN.getCode()]               [Action.LOSE.getCode()]             = State.CONNECTED;
 
         transitions[State.OPPONENT_TURN.getCode()]      [Action.TURN.getCode()]             = State.TURN;
-        transitions[State.OPPONENT_TURN.getCode()]      [Action.WIN.getCode()]             = State.CONNECTED;
+        transitions[State.OPPONENT_TURN.getCode()]      [Action.WIN.getCode()]              = State.CONNECTED;
         transitions[State.OPPONENT_TURN.getCode()]      [Action.LOSE.getCode()]             = State.CONNECTED;
+
+        // both WIN and LOSE result into CONNECTED, so there isn't really a reason to have them separated
+        transitions[State.TURN.getCode()]               [Action.END.getCode()]              = State.CONNECTED;
+        transitions[State.OPPONENT_TURN.getCode()]      [Action.END.getCode()]              = State.CONNECTED;
 
         /* END OF TRANSITION INITIALIZATION */
 

@@ -17,7 +17,7 @@ typedef struct {
 	int connected;
 	time_t last_com;
 	int busy;
-	int onTop;
+	int on_top;
 	char *username;
 } player;
 
@@ -28,7 +28,7 @@ typedef struct {
 int add_player_to_list(l_link *head, player *p);
 player* find_player_in_list(l_link *head, int id);
 player* find_player_by_fd(l_link *head, int fd);
-void remove_player_with_id(l_link **head, int id);
+int delete_player_with_id(l_link **head, int id);
 int verify_player(player* p, int user_id);
 int is_username_available(l_link *head, char *username);
 player* init_player(int fd);

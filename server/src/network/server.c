@@ -1,5 +1,7 @@
 #include "server.h"
+#include "controller.h"
 
+#include <asm-generic/errno-base.h>
 #include <asm-generic/socket.h>
 #include <sys/select.h>
 #include <arpa/inet.h>
@@ -7,10 +9,12 @@
 #include <sys/socket.h>
 
 
+#define BUFFER_SIZE 1024
+
 /**
 	Controller only returns char* message. This is used for additional actions. ie.: disconnect
 */
-int additionalActions = 0;
+int additional_actions = 0;
 
 /**
 	server socket
@@ -78,6 +82,40 @@ int establish_server() {
 	return 0;
 }
 
+
+int input_handler(char *buffer, int socket) {
+	char *response, *token, *save = NULL;
+	int cnt = 0;
+
+	//printf(">>> BUFFER: %s\n", buffer);
+
+	token = strtok_r(buffer, "\n", &save);
+
+	while(token) {
+		response = handle_message(token, socket);
+	
+		if(!response) return 1;
+
+		//printf(">>> RESPONSE: %s\n", response);
+	
+		int rv = send(socket, response, strlen(response), MSG_CONFIRM);
+	
+		if(rv == -1) {
+			printf("Failed to send response");
+			//disconnect socket?
+		}
+		
+		free(response);
+	
+		cnt++;
+		
+		token = strtok_r(NULL, "\n", &save);
+	}
+
+	return 0;
+}
+
+
 /**
 	Runs server. Creates server socket with @ip and @port and services connections.
 	Wasn't intended to create server socket. Temporary solution
@@ -87,11 +125,9 @@ int establish_server() {
 */
 int run_server(char* ip, int port) {
 	int rv = 0, i = 0, data_size;
-	#define BUFFER_SIZE 256
 	char buffer[BUFFER_SIZE];
-	char *response;
-	socklen_t addr_len;
 	struct sockaddr_in client_socket;
+	socklen_t addr_len = sizeof((struct socketaddr*) &client_socket);
 	fd_set clients, tests;
 	time_t last_check = time(NULL);
 
@@ -116,10 +152,13 @@ int run_server(char* ip, int port) {
 
 		tests = clients;
 		errno = 0;
+		//TODO server socket cannot accept connections until timeout
 		rv = select(FD_SETSIZE, &tests, NULL, NULL, timeout);
+		//rv = select(FD_SETSIZE, &tests, NULL, NULL, NULL);
 
 		if(rv < 0) {
-			printf("Ending with FD_SET select error\n"); //TODO
+			//printf("EINVAL = %d , ENOMEM = %d, EBADF = %d\n", EINVAL, ENOMEM, EBADF); //TODO
+
 			if(errno == EINTR) {
 				printf("FD_SET interrupt error. Closing server.\n");
 				return 2;
@@ -133,9 +172,13 @@ int run_server(char* ip, int port) {
 			if(FD_ISSET(i, &tests)) {
 				if(i == ss) {
 					rv = accept(ss, (struct sockaddr*) &client_socket, &addr_len);
-					//add_connection(rv);
-					FD_SET(rv, &clients);
-					printf("New connection. Client not CONNECTED.\n");
+
+					if(rv < 0) {
+						printf("Failed to accept connection with error %d\n", errno);
+					} else {
+						FD_SET(rv, &clients);
+						printf("New connection. Client not CONNECTED.\n");
+					}
 				} else {
 					//printf("Client sending data.\n");
 					ioctl(i, FIONREAD, &data_size);
@@ -144,28 +187,10 @@ int run_server(char* ip, int port) {
 						memset(buffer, 0, BUFFER_SIZE);
 						recv(i, buffer, BUFFER_SIZE - 1, 0);
 
-						printf(">>> BUFFER: %s\n", buffer);
-						response = handle_message(buffer, i);
-						
-						if(!response) {
+						if(input_handler(buffer, i)) {
 							close(i);
 							FD_CLR(i, &clients);
-							continue;
 						}
-
-						printf(">>> RESPONSE: %s\n", response);
-
-						int rv = send(i, response, strlen(response), MSG_CONFIRM);
-
-						if(rv == -1) printf("Failed to send response");
-						
-						free(response);
-
-						switch(additionalActions) {
-							case 1: close(i); FD_CLR(i, &clients); break;
-						}
-
-						additionalActions = 0;
 					} else {
 						//TODO check if client was in-game -> wait for reconnect/ remove game
 						close(i);
@@ -177,7 +202,8 @@ int run_server(char* ip, int port) {
 
 		memset(&client_socket, 0, sizeof(struct sockaddr_in));
 
-		if((time(NULL) - last_check) > 5) {
+		//if((time(NULL) - last_check) > 5) {
+		if((time(NULL) - last_check) > 4) {
 			check_for_disconnects();
 			
 			last_check = time(NULL);
@@ -194,6 +220,32 @@ int run_server(char* ip, int port) {
 */
 void stop_server() {
 	log_message("Stopping server", LVL_INFO);
+	close(ss);
+
+	free_controller();
+
+	exit(1);
+}
+
+void stop_server_int() {
+	printf("Closing server on SIGINT");
+	close(ss);
+
+	free_controller();
+
+	exit(1);
+}
+void stop_server_term() {
+	printf("Closing server on SIGTERM");
+	close(ss);
+
+	free_controller();
+
+	exit(1);
+}
+
+void stop_server_segv() {
+	printf("Closing server on SIGSEGV");
 	close(ss);
 
 	free_controller();

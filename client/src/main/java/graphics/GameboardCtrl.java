@@ -255,24 +255,37 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
      */
     private void highlightMoves(int paneID) {
         ArrayList<Integer> hl = new ArrayList<>();
-        client.getGame().getPossibleMoves(paneID, hl, false, paneID, 0);
+//        client.getGame().getPossibleMoves(paneID, hl, false, paneID, 0);
+        client.getGame().getPossibleMoves_v2(paneID, hl, 0);
 
         if(!hl.isEmpty()) {
             for(int i : hl) {
-                if(Math.abs(paneID - i) > 2 * 9) {
                     getPaneWithID(i).setStyle("-fx-background-color: #00FF00");
-                } else {
-                    getPaneWithID(i).setStyle("-fx-background-color: YELLOW");
                     getPaneWithID(i).setOnMouseClicked(event -> {
                         clickedHL(paneID, i);
                     });
-                }
 
                 highlightedPanes.add(i);
             }
         } else {
             System.out.println("HIGHLIGHT LIST IS NULL");
         }
+//        if(!hl.isEmpty()) {
+//            for(int i : hl) {
+//                if(Math.abs(paneID - i) > 2 * 9) {
+//                    getPaneWithID(i).setStyle("-fx-background-color: #00FF00");
+//                } else {
+//                    getPaneWithID(i).setStyle("-fx-background-color: YELLOW");
+//                    getPaneWithID(i).setOnMouseClicked(event -> {
+//                        clickedHL(paneID, i);
+//                    });
+//                }
+//
+//                highlightedPanes.add(i);
+//            }
+//        } else {
+//            System.out.println("HIGHLIGHT LIST IS NULL");
+//        }
     }
 
     /**
@@ -281,7 +294,7 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
      * @param clicked to
      */
     private void clickedHL(int source, int clicked) {
-        unHighlightProximity(source);
+//        unHighlightProximity(source);
 
         if(moveSequence.isEmpty()) {
             moveSequence.addFirst(source);

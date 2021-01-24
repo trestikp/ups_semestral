@@ -1,5 +1,4 @@
 #include "game.h"
-#include "automaton.h"
 
 
 /**
@@ -49,10 +48,10 @@ game* init_new_game() {
 	if(!new) return NULL;
 
 	init_gameboard(new);
-	bzero(new->gamename, 128);
-	new->gamestate = WAITING;
+	bzero(new->gamename, 64);
 	new->p1 = NULL;
 	new->p2 = NULL;
+	new->on_turn = NULL;
 
 	return new;
 }
@@ -74,19 +73,6 @@ int add_player_to_game(game* g, player* p) {
 	return 0;
 }
 
-/**
-	Transition game automaton state
-*/
-void change_game_state(game* g, action a) {
-	g->gamestate = make_transition(g->gamestate, a);
-}
-
-/**
-	Returns automatons state
-*/
-state get_gamestate(game* g) {
-	return g->gamestate;
-}
 
 /**
 	Finds game with matching player pointer (@p).
@@ -104,6 +90,7 @@ game* find_game_by_player(l_link* head, player* p) {
 
         return NULL;
 }
+
 
 /**
 	Finds game with name @lobby_name. Returns pointer on it and 
@@ -187,28 +174,28 @@ int validate_move(int from, int to, player*p , game* g, int subsequent) {
 	}
 
 	//if player is on top, reverse indexes (player moves in opposite direction)
-	if(p->onTop) {
+	if(p->on_top) {
 		from = 63 - from;
 		to = 63 - to;
 	}
 
 	// stone is a king
 	if(g->gameboard[from] == 4 || g->gameboard[from] == 3) {
-		if(validate_move_direction(g, p->onTop, from, to, subsequent)) {
+		if(validate_move_direction(g, p->on_top, from, to, subsequent)) {
 			return 1;
 		}
 
 	} else { //stone isn't a king
 		//normal stones on top only move downward (index in gameboard increases)
 		if(subsequent == 1) {
-			if(p->onTop) {
+			if(p->on_top) {
 				if(to < from) return 1;
 			} else { // stones on bot only move upward (index in gb decreases)
 				if(to > from) return 1;
 			}
 		}
 
-		if(validate_move_direction(g, p->onTop, from, to, subsequent)) {
+		if(validate_move_direction(g, p->on_top, from, to, subsequent)) {
 			return 1;
 		}
 	}
@@ -335,7 +322,7 @@ void print_gameboard(game* g) {
 	Makes move in gameboard of game @g, @from to @to
 */
 void make_move(int from, int to, player* p, game* g) {
-	if(p->onTop) {
+	if(p->on_top) {
 		if((63 - to) >= 56) {
 			g->gameboard[63 - to] = 4;
 		} else {
@@ -388,6 +375,58 @@ player* check_for_victory(game* g) {
 	}
 	
 	return NULL;
+}
+
+
+player* get_your_opponent(game* g, player* p) {
+	if(g) {
+		//if on_turn != NULL ->  game in progress (== NULL -> waiting for player)
+		if(g->on_turn) {
+			if(g->p1 == p) return g->p2;
+			else if(g->p2 == p) return g->p1;
+		}
+	}
+
+	return NULL;
+}
+
+
+/**
+	Deletes game @g from list @head and frees allocated memory of both @g and 
+	l_link storing @g
+*/
+int delete_game_from_list(l_link **head, game* g) {
+        l_link *prev = NULL, *curr = NULL;
+                                 
+        curr = (*head);
+              
+        while(curr) {
+                if((game*) curr->data == g) {
+                        break;
+                }
+                         
+                prev = curr;
+                curr = curr->next;
+        }               
+                        
+        if(!curr) {     
+                return 1;
+        }               
+                
+        free_game((game*) curr->data);
+        //free(curr->data);
+                
+        if(prev) {
+                prev->next = curr->next;
+        } else {
+                //if prev = NULL, its the beginning of the lobby
+                // -> need to change 
+                (*head) = (*head)->next;
+        }       
+        
+        free(curr);        
+        
+        return 0;          
 }
 
 

@@ -22,4 +22,9 @@ int run_server(char* ip, int port);
 int establish_server();
 void stop_server();
 
+
+void stop_server_int();
+void stop_server_term();
+void stop_server_segv();
+
 #endif

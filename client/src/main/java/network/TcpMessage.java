@@ -9,6 +9,8 @@ public class TcpMessage {
     private String responseText;
     private String[] params;
 
+    private boolean creationError = false;
+
 
     /**
      * Creates TcpMessage from String received from server
@@ -25,6 +27,7 @@ public class TcpMessage {
                 player_id = Integer.parseInt(parts[0]);
             } catch (NumberFormatException e) {
                 player_id = -1;
+                creationError = true;
                 System.err.println("Failed to parse ID");
             }
 
@@ -36,6 +39,7 @@ public class TcpMessage {
             }
 
             if (inst == null) {
+                creationError = true;
                 inst = Instruction.INST_ERROR;
             }
 
@@ -43,6 +47,7 @@ public class TcpMessage {
                 responseCode = Integer.parseInt(parts[2]);
             } catch (NumberFormatException e) {
                 responseCode = -1;
+                creationError = true;
                 System.err.println("Failed to parse response code");
             }
 
@@ -50,6 +55,7 @@ public class TcpMessage {
 
             params = Arrays.copyOfRange(parts, 4, parts.length);
         } catch (IndexOutOfBoundsException e) {
+            creationError = true;
             System.err.println("Some part of the message doesn't suit my protocol");
         }
     }
@@ -76,8 +82,8 @@ public class TcpMessage {
         int p;
 
         switch (i) {
-            case QUICK_PLAY: case CONNECT: p = 1; break;
-            case TURN: p = 30; break;
+            case QUICK_PLAY: case CONNECT: case JOIN_GAME: case OPPONENT_JOIN: p = 1; break;
+            case TURN: case OPPONENT_TURN: p = 30; break;
             case LOBBY: p = 512; break; // "random" number, should have limited number of rooms on server
             default: p = 0;
         }
@@ -103,5 +109,9 @@ public class TcpMessage {
 
     public String[] getParams() {
         return params;
+    }
+
+    public boolean getCreationError() {
+        return creationError;
     }
 }

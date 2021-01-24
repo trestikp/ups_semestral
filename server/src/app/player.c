@@ -66,18 +66,24 @@ int is_username_available(l_link *head, char *username) {
 	return 1;
 }
 
-void remove_player_with_id(l_link **head, int id) {
+int delete_player_with_id(l_link **head, int id) {
+	int found = 1;
 	l_link *prev = NULL;
 	l_link *temp = *head;
 
 	while(temp) {
 		if(((player*) temp->data)->id == id) {
 			free_player((player*) temp->data);
+			found = 0;
 			break;
 		}
 
 		prev = temp;
 		temp = temp->next;
+	}
+
+	if(found) { //failed to find player in list
+		return 1;
 	}
 
 	if(prev) {
@@ -87,6 +93,8 @@ void remove_player_with_id(l_link **head, int id) {
 	}
 
 	free(temp);
+
+	return 0;
 }
 
 /**
@@ -101,7 +109,7 @@ player* init_player(int fd) {
         new->id = 0;
         new->strikes = 0;
 	new->busy = 0;
-	new->onTop = 0;
+	new->on_top = 0;
         new->username = NULL;
 	new->last_com = time(NULL);
         

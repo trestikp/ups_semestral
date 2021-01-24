@@ -64,18 +64,19 @@ public class TcpConnection {
 
             soc.close();
         } catch(Exception e) {
-            e.printStackTrace();
+            System.err.println("Failed to safely close connection");
         }
     }
 
     public void sendMessageTxt(String msg) {
-        System.out.println("Sending: " + msg);
+        if(!msg.contains("PING")) //TODO remove
+            System.out.println("Sending: " + msg);
 
         try {
             writer.print(msg);
             writer.flush();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Failed to send message");
         }
     }
 
@@ -86,11 +87,14 @@ public class TcpConnection {
             if(reader.ready()) {
                 res = reader.readLine();
                 if(res == null) return null;
-                System.out.println(res);
+
+                if(!res.contains("PING")) // TODO remove
+                    System.out.println(res);
+
                 return new TcpMessage(res);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Failed to receive message");
         }
 
         return null;

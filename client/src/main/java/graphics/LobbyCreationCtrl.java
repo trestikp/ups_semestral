@@ -43,6 +43,12 @@ public class LobbyCreationCtrl extends OverlordCtrl implements CtrlNecessities {
             return;
         }
 
+        if(lobbyNameTF.getText().length() > 63) {
+            lobbyNameErrLbl.setText("Lobby name too long! Maximum 63 characters");
+            lobbyNameErrLbl.setVisible(true);
+            return;
+        }
+
         client.setInstruction(Instruction.CREATE_LOBBY);
     }
 

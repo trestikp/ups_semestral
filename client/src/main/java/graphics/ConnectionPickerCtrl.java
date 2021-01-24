@@ -68,7 +68,7 @@ public class ConnectionPickerCtrl extends OverlordCtrl implements CtrlNecessitie
      * @return true on successful validation
      */
     private boolean validateInputs(String ip, String port, String username) {
-        boolean allGood = false, ipGood = false, portGood = false, nameGood = false;
+        boolean ipGood, portGood, nameGood;
 
         ipGood = true;
 //        if(ip.matches("^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$")) {
@@ -84,6 +84,13 @@ public class ConnectionPickerCtrl extends OverlordCtrl implements CtrlNecessitie
 //
 //            ipGood = false;
 //        }
+
+        if(ip.length() > 64) {
+            ipErrorLbl.setText("Maximum allowed length is 64 characters");
+            ipErrorLbl.setVisible(true);
+
+            ipGood = false;
+        }
 
         try {
             int b = Integer.parseInt(port);
@@ -101,13 +108,18 @@ public class ConnectionPickerCtrl extends OverlordCtrl implements CtrlNecessitie
         }
 
         if(username.isBlank()) {
-            nameGood = false;
-
             usernameErrorlbl.setText("Please enter a username");
             usernameErrorlbl.setVisible(true);
+
+            nameGood = false;
+        } else if(username.length() > 32) {
+            usernameErrorlbl.setText("Username can be a max of 32 characters");
+            usernameErrorlbl.setVisible(true);
+
+            nameGood = false;
         } else {
-            nameGood = true;
-            usernameErrorlbl.setVisible(false);
+                nameGood = true;
+                usernameErrorlbl.setVisible(false);
         }
 
         return (ipGood && portGood && nameGood);
@@ -126,8 +138,6 @@ public class ConnectionPickerCtrl extends OverlordCtrl implements CtrlNecessitie
             client.setUsername(username);
             client.setHost(host);
             client.setPort(port);
-
-            client.establishConnection();
 
             client.setInstruction(Instruction.CONNECT);
         } else {

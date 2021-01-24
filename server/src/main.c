@@ -127,9 +127,9 @@ int main(int argc, char *argv[]) {
 
 	}
 
-	signal(SIGINT, stop_server);
-	signal(SIGTERM, stop_server);
-	signal(SIGSEGV, stop_server);
+	signal(SIGINT, stop_server_int);
+	//signal(SIGTERM, stop_server_term);
+	//signal(SIGSEGV, stop_server_segv);
 
 	init_defaults();
 

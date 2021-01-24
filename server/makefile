@@ -13,7 +13,7 @@ gf:
 	${CC} ${PARAMS} -c src/general_functions.c
 
 app:
-	${CC} ${PARAMS} -c src/app/{automaton,game,player}.c
+	${CC} ${PARAMS} -c src/app/{game,player}.c
 
 remove_o:
 	rm -f *.o
@@ -24,5 +24,5 @@ clean:
 
 run: logger server gf app
 	${CC} ${PARAMS} -o run_server src/main.c logger.o server.o\
- general_functions.o automaton.o game.o player.o controller.o\
+ general_functions.o game.o player.o controller.o\
  message_builder.o

@@ -162,6 +162,73 @@ public class Game {
         }
     }
 
+    public void getPossibleMoves_v2(int indexPosition, ArrayList<Integer> positions, int bannedDir) {
+        int start, target;
+        boolean isKing;
+        int[] dirVectors = {-7, -9, 7, 9};
+
+        if(gameBoard[indexPosition] == 3) {
+            isKing = true;
+        } else if(gameBoard[indexPosition] == 1) {
+            isKing = false;
+        } else {
+            System.err.println("Somehow player tried to get moves for field without his stone");
+            return;
+        }
+
+        if(isKing) {
+            for(int i = 0; i < 4; i++) {
+                if(dirVectors[i] == bannedDir) continue;
+
+                start = indexPosition;
+
+                //longest row is 8, but lets just give 2 more for sure :)
+                for(int j = 0; j < 10; j++) { //for is used so the program can't get hung up on an infinite while
+                    target = getDirectionTarget(start, dirVectors[i]);
+
+                    if (target == -1) break;
+
+                    positions.add(target);
+                    start = target;
+                }
+
+//                while (true) {
+//                    target = getDirectionTarget(start, dirVectors[i]);
+//
+//                    if (target != -1 && Math.abs(start - target) < 14) {
+//                        break;
+//                    }
+//
+//                    positions.add(target);
+//                    start = target;
+//                }
+            }
+        } else {
+            for(int i = 0; i < 2; i++) {
+                target = getDirectionTarget(indexPosition, dirVectors[i]);
+
+                if(target != -1) {
+                    positions.add(target);
+                }
+            }
+        }
+
+//        for(int i = 0; i < dirs; i++) {
+//            start = indexPosition;
+//
+//            while(true) {
+//                target = getDirectionTarget(start, dirVectors[i]);
+//
+//                if(target != -1 && Math.abs(start - target) < 14) {
+//                    break;
+//                }
+//
+//                positions.add(target);
+//                start = target;
+//            }
+//        }
+    }
+
     /**
      * Returns index of target in direction or -1
      * @param indexPosition source index
