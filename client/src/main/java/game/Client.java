@@ -16,6 +16,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 /**
  * Client class handles communication with server, stores game instance and stores automaton
@@ -68,6 +69,9 @@ public class Client implements Runnable {
     private boolean pingResponse = true;
     private boolean wasConnected = false;
 
+    private boolean quitAfterDisconnect = false;
+    private boolean showingReconnect = false;
+
     private int strikes = 0;
 
     /**
@@ -90,7 +94,8 @@ public class Client implements Runnable {
 
         while(auto.getGameState() != State.END) {
             try {
-                Thread.sleep(100);
+                Thread.sleep(5);
+                //Thread.sleep(500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -101,6 +106,8 @@ public class Client implements Runnable {
             updateStatusElements();
 
 //            System.out.println("inst: " + (inst == null ? "null" : inst.getName()) + "  -  " + waitingForReply);
+
+            if(showingReconnect) continue;
 
             if(!waitingForReply) {
                 if(inst != null) {
@@ -148,7 +155,6 @@ public class Client implements Runnable {
                             waitingForReply = false;
                             inst = null;
                         } else {
-                            //TODO wasn't expecting reply
                             status.setResponseText("Reply not expected");
                         }
                     } else {
@@ -164,6 +170,7 @@ public class Client implements Runnable {
                     }
 
                     lastCommunication = System.currentTimeMillis();
+                    lastReconnectAttempt = lastCommunication;
                 } else {
                     if(CONNECTED) {
                         if((System.currentTimeMillis() - lastCommunication) > 5000) {
@@ -174,6 +181,10 @@ public class Client implements Runnable {
                                     ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
                                 }
                             });
+
+                            if(quitAfterDisconnect) { //if user wanted to disconnect but response hasn't come
+                                System.exit(0);
+                            }
 
                             connection.close();
                             connection = null;
@@ -186,33 +197,18 @@ public class Client implements Runnable {
                         }
                     } else {
                         if(wasConnected && (System.currentTimeMillis() - lastReconnectAttempt) > 5000) {
+                            System.err.println("Closing connection here");
+
                             //reconnection attempt might have established connection but failed to CONNECT
                             if(connection != null) {
                                 connection.close();
                                 connection = null;
                             }
+                        } else {
+                            System.out.println("I'm getting there");
                         }
                     }
                 }
-
-//                if(!waitingForReply) {
-//                    if(inst != null) {
-////                        System.out.println("Sending request: " + inst.getName());
-//
-//                        boolean rv = sendRequest(inst);
-//
-//                        status.setResponseText("Waiting for server response");
-//
-//                        if(rv) {
-//                            waitingForReply = true;
-//                        } else {
-//                            //TODO failed to send request
-//                            handleError(inst);
-//
-//                            inst = null;
-//                        }
-//                    }
-//                }
 
                 if ((System.currentTimeMillis() - lastCommunication) > 1000 && CONNECTED &&
                         pingResponse && inst == null) {
@@ -221,10 +217,58 @@ public class Client implements Runnable {
             } else {
 //                System.err.println("No connection. Reconnecting?");
 
-                if((System.currentTimeMillis() - lastReconnectAttempt) > 5000 && wasConnected) {
-                    setInstruction(Instruction.CONNECT);
+                System.err.println("I am moving here right with " + ((System.currentTimeMillis() - lastReconnectAttempt) / 1000) + " and " + wasConnected);
 
-                    //TODO? reset move sequence?
+                //user was connected but hasn't attempted reconnect for more then 5s
+                if((System.currentTimeMillis() - lastReconnectAttempt) > 5000 && wasConnected) {
+                    System.err.println(((System.currentTimeMillis() - lastCommunication) / 1000) + "s since last communication");
+
+//                    waitingForReply = false;
+//                    setInstruction(Instruction.CONNECT);
+
+                    //if user is disconnected for more then 60s show reconnect
+//                    if((System.currentTimeMillis() - lastReconnectAttempt) > 120000 && !showingReconnect) {
+//                    if((System.currentTimeMillis() - lastCommunication) > 120000 && !showingReconnect) {
+                    if((System.currentTimeMillis() - lastCommunication) > 30000 && !showingReconnect) {
+
+
+                        System.err.println("This is the inner shit");
+                        //if connection isn't restored within 5 minutes, stop reconnecting (server removed player)
+                        if((System.currentTimeMillis() - lastCommunication) >= 300000) {
+                            System.out.println("Failed to reestablish connection.");
+                            resetConnectionInfo();
+
+                            Platform.runLater(() -> {
+                                currentCtrl.genericSetScene("main_menu_disconnected.fxml");
+                            });
+                        }
+
+                        showingReconnect = true;
+                        waitingForReply = false;
+
+                        Platform.runLater(() -> {
+                            currentCtrl.genericSetScene("reconnection_repeat.fxml");
+                            ((ReconnectionRepeatCtrl) currentCtrl).messageLbl.setText("Failed to reconnect. Do you " +
+                                    "wish to try again?");
+                        });
+                    } else {
+                        System.err.println("Setting inst to CONNECT");
+
+                        waitingForReply = false;
+                        setInstruction(Instruction.CONNECT);
+                    }
+
+                    //TODO move this somewhere before setting CONNECT inst
+                    //reset move sequence if turn wasn't confirmed
+//                    if(inst == Instruction.TURN && waitingForReply) {
+//                        inst = null;
+//                        waitingForReply = false;
+//
+//                        Platform.runLater(() -> {
+//                            ((GameboardCtrl) currentCtrl).resetMoveSequence();
+//                            ((GameboardCtrl) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
+//                        });
+//                    }
                 } else {
                     if(!CONNECTED) {
                         inst = null;
@@ -232,33 +276,12 @@ public class Client implements Runnable {
                     }
                 }
 
-
-//                System.err.println("No connection. Waiting for new one");
-
-                //TODO attempt reconnect
-
-//                establishConnection();
-//
-//                if(connection == null) {
-//                    status.setResponseText("Failed blabla");
-//                }
-
-//                if(!CONNECTED && connection != null) {
-//                    setInstruction(Instruction.CONNECT);
-//                }
-
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-
-//            try {
-//                Thread.sleep(10);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
         }
     }
 
@@ -268,6 +291,7 @@ public class Client implements Runnable {
     public void start() {
         if(t == null) {
             t = new Thread(this, "backend");
+            t.setDaemon(true);
             t.start();
         }
     }
@@ -296,12 +320,12 @@ public class Client implements Runnable {
         if(!connection.getSoc().isConnected()) {
             System.err.println("Created socket but can't connect");
             status.setResponseText("Created socket but can't connect");
+
+            connection.close();
             connection = null;
 
             return false;
         }
-
-        saveConnectionToFile();
 
         //must be set to reasonable time when connection starts
         lastCommunication = System.currentTimeMillis();
@@ -466,7 +490,7 @@ public class Client implements Runnable {
         } else if(msg.getInst() == Instruction.PING) {                                                          //PING
             pingResponse = true;
         } else if(msg.getInst() == Instruction.OPPONENT_DISC) {                                         //OPPONENT_DISC
-            //TODO set opponent disconnected
+            opponentConnected = false;
 
             Platform.runLater(() -> {
                 if(currentCtrl instanceof GameboardCtrl) {
@@ -476,9 +500,9 @@ public class Client implements Runnable {
 
             auto.setGameState(State.LOST_CON);
             status.setResponseText("Opponent lost connection. Waiting..");
+        } else if(msg.getInst() == Instruction.OPPONENT_RECO) {
+            opponentConnected = true;
         }
-
-
     }
 
     /**
@@ -522,6 +546,8 @@ public class Client implements Runnable {
     private void sendConnect() {
         StringBuilder sb = new StringBuilder();
 
+        if(clientID > 0) lastReconnectAttempt = System.currentTimeMillis();
+
         if(!establishConnection()) {
 //            status.setResponseText("Failed to establish connection");
             System.out.println("Failed to establish connection");
@@ -534,8 +560,6 @@ public class Client implements Runnable {
         sb.append("|");
         sb.append(username);
         sb.append('\n');
-
-        if(clientID > 0) lastReconnectAttempt = System.currentTimeMillis();
 
         connection.sendMessageTxt(sb.toString());
     }
@@ -701,6 +725,8 @@ public class Client implements Runnable {
             if(reply.getResponseCode() == 201) {
                 clientID = reply.getPlayer_id();
 
+                saveConnectionToFile();
+
                 if(auto.validateTransition(Action.CONNECT)) {
                     auto.makeTransition(Action.CONNECT);
 
@@ -716,16 +742,49 @@ public class Client implements Runnable {
                 }
             } else if(reply.getResponseCode() == 202) {
                 CONNECTED = true;
+                quitAfterDisconnect = false;
+                wasConnected = true;
 
-                //TODO state to which restore the client
-                auto.setGameState(State.CONNECTED); //TODO temp state for testing
+                if(reply.getParams()[0].equals(State.CONNECTED.getName())) {
+                    auto.setGameState(State.CONNECTED);
 
-                //TODO GUI transfer
+                    Platform.runLater(() -> {
+                        currentCtrl.genericSetScene("main_menu_connected.fxml");
+                        status.setResponseText(reply.getResponseText());
+                    });
+                } else if(reply.getParams()[0].equals(State.TURN.getName())) {
+                    auto.setGameState(State.TURN);
+
+                    Platform.runLater(() -> {
+                        ((GameboardCtrl) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
+                    });
+                } else if(reply.getParams()[0].equals(State.OPPONENT_TURN.getName())) {
+                    auto.setGameState(State.OPPONENT_TURN);
+                } else {
+                    doStrikeOrDisconnect(); //TODO do this or ignore?
+
+                    System.err.println("Failed to get state from server on reconnection. Returning to menu");
+
+                    status.setResponseText("Failed to get state. Returning to menu");
+                    auto.setGameState(State.CONNECTED);
+                }
             } else {
                 status.setResponseText("Unknown positive code");
             }
         } else if(reply.getInst() == Instruction.ERROR) {
             status.setResponseText(reply.getResponseText());
+
+            if(quitAfterDisconnect) {
+                Platform.runLater(() -> {
+                    currentCtrl.genericSetScene("main_menu_disconnected.fxml");
+                    status.setResponseText("Failed to reconnect");
+                });
+
+                resetConnectionInfo();
+                deleteConnectionFile();
+
+                quitAfterDisconnect = false;
+            }
 
             //if CONNECT fails, close connection (no strikes)
             if(connection != null) {
@@ -767,6 +826,10 @@ public class Client implements Runnable {
             status.setResponseText(reply.getResponseText());
         } else {
             status.setResponseText("Unknown response");
+        }
+
+        if(quitAfterDisconnect) {
+            System.exit(0);
         }
     }
 
@@ -1096,7 +1159,7 @@ public class Client implements Runnable {
     public void updateStatusElements() {
         Platform.runLater(() -> {
 //            if(connection == null || connection.getSoc() == null || !connection.getSoc().isConnected()) {
-            if(auto.getGameState() == State.DISCONNECTED || auto.getGameState() == State.PICKER) {
+            if(!CONNECTED) {
                 status.clientConnectCircle.setStyle("-fx-fill: #FF0000");
                 status.clientConnectionLabel.setText("Disconnected");
             } else {
@@ -1133,6 +1196,19 @@ public class Client implements Runnable {
      */
     public void setCurrentCtrl(OverlordCtrl currentCtrl) {
         this.currentCtrl = currentCtrl;
+    }
+
+
+    public StatusBar getStatus() {
+        return status;
+    }
+
+    public void setShowingReconnect(boolean showingReconnect) {
+        this.showingReconnect = showingReconnect;
+    }
+
+    public boolean getShowingReconnect() {
+        return showingReconnect;
     }
 
 /*---------------------------------------------------------------------------------------------------------------------|
@@ -1234,6 +1310,49 @@ public class Client implements Runnable {
         }
     }
 
+    public boolean readConnectionFromFile() {
+        File f = new File("./.last_connection");
+        String line = null;
+
+        if(!f.exists()) return false;
+
+        try {
+            Scanner sc = new Scanner(f);
+
+            if(sc.hasNextLine()) line = sc.nextLine();
+
+            if(line != null) {
+                String[] parts = line.split("\\|");
+
+                if(parts.length != 4) return false;
+
+                host = parts[0];
+
+                try {
+                    port = Integer.parseInt(parts[1]);
+
+                    if(port < 0 || port > 65536) return false;
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+
+                username = parts[2];
+
+                try {
+                    clientID = Integer.parseInt(parts[3]);
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        } catch (IOException e) {
+            return false;
+        }
+
+        return true;
+    }
+
     private void deleteConnectionFile() {
         File f = new File("./.last_connection");
 
@@ -1260,5 +1379,24 @@ public class Client implements Runnable {
 
             deleteConnectionFile();
         }
+    }
+
+    public void setQuitAfterDisconnect(boolean quitAfterDisconnect) {
+        this.quitAfterDisconnect = quitAfterDisconnect;
+    }
+
+    public void resetConnectionInfo() {
+        host = null;
+        port = -1;
+        clientID = 0;
+        username = null;
+
+        connection = null;
+        auto.setGameState(State.DISCONNECTED);
+
+        lastReconnectAttempt = -1;
+        lastCommunication = -1;
+        wasConnected = false;
+        showingReconnect = false;
     }
 }

@@ -9,6 +9,8 @@
 #include <sys/socket.h>
 
 
+#include<sys/time.h>
+
 #define BUFFER_SIZE 1024
 
 /**
@@ -134,6 +136,11 @@ int run_server(char* ip, int port) {
 	struct timeval *timeout = calloc(1, sizeof(struct timeval));
 	timeout->tv_sec = 5;
 
+	//DEBUG
+		struct timeval start, loop_start;
+		struct timeval  end, loop_end;
+	//
+
 	ss = create_server_socket(ip, port);
 
 	if(ss == -1) {
@@ -148,7 +155,8 @@ int run_server(char* ip, int port) {
 
 	//char c;
 	while(1) {
-		printf("> ");
+		gettimeofday(&loop_start, NULL);
+		//printf("> ");
 
 		tests = clients;
 		errno = 0;
@@ -177,7 +185,7 @@ int run_server(char* ip, int port) {
 						printf("Failed to accept connection with error %d\n", errno);
 					} else {
 						FD_SET(rv, &clients);
-						printf("New connection. Client not CONNECTED.\n");
+						printf("New connection. Client not CONNECTED. FD %d\n", rv);
 					}
 				} else {
 					//printf("Client sending data.\n");
@@ -187,10 +195,14 @@ int run_server(char* ip, int port) {
 						memset(buffer, 0, BUFFER_SIZE);
 						recv(i, buffer, BUFFER_SIZE - 1, 0);
 
+						gettimeofday(&start, NULL);
 						if(input_handler(buffer, i)) {
 							close(i);
 							FD_CLR(i, &clients);
 						}
+						gettimeofday(&end, NULL);
+						
+						//printf("Input handling took: %ldms\n", (end.tv_usec - start.tv_usec));
 					} else {
 						//TODO check if client was in-game -> wait for reconnect/ remove game
 						close(i);
@@ -202,14 +214,20 @@ int run_server(char* ip, int port) {
 
 		memset(&client_socket, 0, sizeof(struct sockaddr_in));
 
-		//if((time(NULL) - last_check) > 5) {
-		if((time(NULL) - last_check) > 4) {
-			check_for_disconnects();
+		if((time(NULL) - last_check) >= 5) {
+		//if((time(NULL) - last_check) > 4) {
+
+			gettimeofday(&start, NULL);
+			check_for_disconnects(&clients);
+			gettimeofday(&end, NULL);
+				
+			//printf("Disconnect check took: %ldms\n", (end.tv_usec - start.tv_usec));
 			
 			last_check = time(NULL);
 		}
 
-		sleep(1);
+		gettimeofday(&loop_end, NULL);
+		//printf("Loop took: %ldms\n", (loop_end.tv_usec - loop_start.tv_usec));
 	}
 	
 	return 0;

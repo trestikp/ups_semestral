@@ -6,6 +6,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.io.File;
+
 /**
  * Main class containing primary stage of GUI.
  */
@@ -27,7 +29,15 @@ public class Handler {
         client.start();
         //TODO: join threads ?
 
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml_res/main_menu_disconnected.fxml"));
+        File f = new File("./.last_connection");
+        FXMLLoader loader;
+
+        if(f.exists()) {
+            loader = new FXMLLoader(getClass().getResource("/fxml_res/reconnection_repeat.fxml"));
+        } else {
+            loader = new FXMLLoader(getClass().getResource("/fxml_res/main_menu_disconnected.fxml"));
+        }
+
         Parent root = loader.load();
 
         primaryStage.setTitle("Checkers");

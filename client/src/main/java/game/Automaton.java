@@ -63,6 +63,10 @@ public class Automaton {
         transitions[State.TURN.getCode()]               [Action.END.getCode()]              = State.CONNECTED;
         transitions[State.OPPONENT_TURN.getCode()]      [Action.END.getCode()]              = State.CONNECTED;
 
+//        transitions[State.LOST_CON.getCode()]           [Action.CONNECT.getCode()]          = State.CONNECTED;
+//        transitions[State.LOST_CON.getCode()]           [Action.TURN.getCode()]             = State.TURN;
+//        transitions[State.LOST_CON.getCode()]           [Action.OPP_TURN.getCode()]         = State.OPPONENT_TURN;
+
         /* END OF TRANSITION INITIALIZATION */
 
         gameState = State.DISCONNECTED;

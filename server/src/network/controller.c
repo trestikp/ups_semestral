@@ -6,6 +6,8 @@
 #include <string.h>
 #include <strings.h>
 
+#include <unistd.h>
+
 #include <limits.h>
 #include <time.h>
 
@@ -33,6 +35,8 @@ char* inst_string[INSTRUCTION_COUNT] = {
 	[OPPONENT_JOIN] = "OPPONENT_JOIN",
 	[OPPONENT_TURN] = "OPPONENT_TURN",
 	[OPPONENT_DISC]	= "OPPONENT_DISC",
+	[OPPONENT_RECO] = "OPPONENT_RECO",
+	[OPPONENT_LEFT] = "OPPONENT_LEFT",
 	[PING]		= "PING"
 };
 
@@ -299,6 +303,38 @@ int parse_string_to_int(char* str) {
 
 
 
+void remove_disconnected_player(player* p) {
+	game* g = NULL;
+
+	g = find_players_game(p);
+
+	if(g) {
+		player* opponent = get_your_opponent(g, p);
+
+		if(!opponent) {
+			if(delete_game_from_list(&g_lobby, g)) printf("Server didn't find the game to delete");
+
+			return;
+		}
+
+		if(opponent->connected) {
+			char* op_msg = construct_message_with_inst(opponent->id, inst_string[OPPONENT_LEFT],
+						201, "Terminating game. Opponent left");
+
+			if(!op_msg) printf("Failed to construct message to opponent");
+
+			int rv = send(opponent->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
+
+			if(rv < 0) printf("Failed to send message to opponent");
+
+			free(op_msg);
+
+			if(delete_game_from_list(&g_playing, g)) printf("Server didn't find the game to delete");
+		}
+	}
+
+	delete_player_with_id(&p_list, p->id);
+}
 
 /**
 	Does basic instruction validation. Validates number of tokens (message infromation
@@ -321,6 +357,7 @@ int validate_instruction_par_count(instruction inst, int token_cnt) {
 		case CONNECT: case CREATE_LOBBY: case JOIN_GAME: params = 1; break;
 		case TURN: params = 30; break;
 		case INST_ERROR: params = -1; //never occurs, it's just to prevent warning
+		default: params = 0;
 	}
 
 	if((params + 2) != token_cnt) {
@@ -417,15 +454,24 @@ char* connect_my(int* player_id, char* username, int fd) {
 			//would be done regardless, so there is no reason to check for p->busy
 			g = find_players_game(p);
 
-			if(!g) append_parameter(&msg, "CONNECTED"); //no game
+			if(!g) append_parameter(&msg, "connected"); //no game
 			else if(!g->on_turn) { //no opponent = was waiting for opponent
 				delete_game_from_list(&g_lobby, g);
-				append_parameter(&msg, "CONNECTED");
+				append_parameter(&msg, "connected");
 			} else { //has game, has opponent
-				if(g->on_turn == p) {
-					append_parameter(&msg, "TURN");
+				player* opponent = get_your_opponent(g, p);
+				char* op_msg = construct_message_with_inst(opponent->id, inst_string[OPPONENT_RECO],
+								201, "Opponent reconnected");
+
+				int rv = send(opponent->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
+				if(rv < 0) printf("Failed to contact opponent about reconnect");
+
+				free(op_msg);
+
+				if(g->on_turn == p) { //TODO append gamestate in case opponent moved before disc
+					append_parameter(&msg, "turn");
 				} else {
-					append_parameter(&msg, "OPPONENT_TURN");
+					append_parameter(&msg, "opponents_turn");
 				}
 			}
 
@@ -820,7 +866,7 @@ char* disconnect(player* p) {
 /*****************************************************************************/
 
 
-void check_for_disconnects() {
+void check_for_disconnects(fd_set* clients) {
 	l_link* temp = p_list;
 	player* p = NULL;
 	game* g = NULL;
@@ -832,11 +878,21 @@ void check_for_disconnects() {
 			p = (player*) temp->data;
 
 			if(p->connected == 0) {
-				//TODO if player is disconnected for more than 600s, remove him and his game
 				//if he had one
 				printf("Player %d got %lds left to reconnect\n", p->id, 
 						(600 - (time(NULL) - p->last_com)));
+						//(60 - (time(NULL) - p->last_com)));
 				temp = temp->next;
+
+				if((time(NULL) - p->last_com) >= 600) {
+				//if((time(NULL) - p->last_com) >= 60) {
+					FD_CLR(p->socket, clients);
+					close(p->socket);
+				
+					remove_disconnected_player(p);
+				}
+
+
 				continue;
 			}
 
@@ -871,6 +927,8 @@ void check_for_disconnects() {
 								inst_string[OPPONENT_DISC], 201, "Opponent disconnected");
 							rv = send(g->p2->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
 
+							if(rv < 0) printf("Failed to contact opponent about disconnect");
+
 							free(op_msg);
 						}
 					} else {
@@ -880,6 +938,8 @@ void check_for_disconnects() {
 							op_msg = construct_message_with_inst(g->p1->id,
 								inst_string[OPPONENT_DISC], 201, "Opponent disconnected");
 							rv = send(g->p1->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
+
+							if(rv < 0) printf("Failed to contact opponent about disconnect");
 
 							free(op_msg);
 						}

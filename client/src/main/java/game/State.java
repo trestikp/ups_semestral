@@ -11,7 +11,7 @@ public enum State {
     CHOOSING_LOBBY  ("choosing lobby"   , 4),
     WAITING         ("waiting"          , 5),
     TURN            ("turn"             , 6),
-    OPPONENT_TURN   ("opponents turn"   , 7),
+    OPPONENT_TURN   ("opponents_turn"   , 7),
     PAUSE           ("pause"            , 8),
     NOT_ALLOWED     ("not allowed"      , 9),
     LOST_CON        ("lost connection"  , 10),

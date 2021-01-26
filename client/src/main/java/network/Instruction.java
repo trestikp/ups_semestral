@@ -15,6 +15,7 @@ public enum Instruction {
     OPPONENT_JOIN   ("OPPONENT_JOIN", 10),
     OPPONENT_TURN   ("OPPONENT_TURN", 11),
     OPPONENT_DISC   ("OPPONENT_DISC", 12),
+    OPPONENT_RECO   ("OPPONENT_RECO", 30),
     /** responses */
 //    HANDSHAKE       ("handshake"    , 50),
     INST_ERROR      ("INST_ERROR"   , 50),

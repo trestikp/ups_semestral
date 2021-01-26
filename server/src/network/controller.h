@@ -8,7 +8,7 @@
 
 #include <sys/socket.h>
 
-#define INSTRUCTION_COUNT 15
+#define INSTRUCTION_COUNT 17
 #define RESPONSE_SIZE 256
 
 /**
@@ -26,7 +26,9 @@ typedef enum {
 	DELETE_LOBBY	= 11,
 	OPPONENT_JOIN	= 12,
 	OPPONENT_TURN	= 13,
-	OPPONENT_DISC 	= 14
+	OPPONENT_DISC 	= 14,
+	OPPONENT_RECO	= 15,
+	OPPONENT_LEFT	= 16
 } instruction;
 
 /**
@@ -37,6 +39,6 @@ int add_connection(int fd);
 char* handle_message(char *message, int fd);
 char* construct_response(int user_id, instruction inst, int code);
 void free_controller();
-void check_for_disconnects();
+void check_for_disconnects(fd_set* clients);
 
 #endif

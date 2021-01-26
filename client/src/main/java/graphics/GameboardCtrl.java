@@ -40,6 +40,8 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
     /** Red stone image used to generate ImageViews (Image is 2000x2000 px takes long to load) */
     private final Image blueKing = new Image(getClass().getResource("/img/blue_king_piece.png").toString());
 
+    private int firstClick;
+
 
     // Status bar elements
     public Ellipse clientConnectCircle;
@@ -94,80 +96,112 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
         PSColor playerColor = client.getGame().getPlayerColor();
         int[] gameBoard = client.getGame().getGameBoard();
 
-        Image red = new Image(getClass().getResource("/img/red_piece.png").toString());
-        Image blue = new Image(getClass().getResource("/img/blue_piece.png").toString());
-
         for(int i = 0; i < gameBoard.length; i ++) {
             Pane p = (Pane) board_gpane.getChildren().get(i);
 
-            if(playerColor == PSColor.BLACK) {
-                ps = new ImageView(red);
-                es = new ImageView(blue);
-            } else {
-                es = new ImageView(red);
-                ps = new ImageView(blue);
-            }
-
-            if(gameBoard[i] == 2) {
-                es.fitWidthProperty().bind(p.widthProperty());
-                es.fitHeightProperty().bind(p.heightProperty());
-
-                es.setOnMouseClicked(event -> {
-                        responseLabel.setText("Opponents stone. No action");
-                });
-
-                p.getChildren().add(es);
-            } else if(gameBoard[i] == 1) {
-                ps.fitWidthProperty().bind(p.widthProperty());
-                ps.fitHeightProperty().bind(p.heightProperty());
-
-                ps.setOnMouseClicked(event -> {
-                    int paneID = Integer.parseInt(((ImageView) event.getSource()).getParent().getId());
-                    imageViewEvent(paneID);
-
-                    System.out.println("You clicked " + paneID);
-                });
-
-                p.getChildren().add(ps);
-            }
-
-            //debug
-            else if(gameBoard[i] == 3) {
+            if(gameBoard[i] == 3 || gameBoard[i] == 4) {
                 if(playerColor == PSColor.BLACK) {
                     ps = new ImageView(redKing);
-                } else {
-                    ps = new ImageView(blueKing);
-                }
-
-
-                ps.fitWidthProperty().bind(p.widthProperty());
-                ps.fitHeightProperty().bind(p.heightProperty());
-
-                ps.setOnMouseClicked(event -> {
-                    int paneID = Integer.parseInt(((ImageView) event.getSource()).getParent().getId());
-                    imageViewEvent(paneID);
-
-                    System.out.println("You clicked " + paneID);
-                });
-
-                p.getChildren().add(ps);
-            } else if(gameBoard[i] == 4) {
-                if(playerColor == PSColor.BLACK) {
                     es = new ImageView(blueKing);
                 } else {
                     es = new ImageView(redKing);
+                    ps = new ImageView(blueKing);
                 }
-
-                es.fitWidthProperty().bind(p.widthProperty());
-                es.fitHeightProperty().bind(p.heightProperty());
-
-                es.setOnMouseClicked(event -> {
-                    responseLabel.setText("Opponents stone. No action");
-                });
-
-                p.getChildren().add(es);
+            } else {
+                if(playerColor == PSColor.BLACK) {
+                    ps = new ImageView(red);
+                    es = new ImageView(blue);
+                } else {
+                    es = new ImageView(red);
+                    ps = new ImageView(blue);
+                }
             }
-            //end debug
+
+            if(gameBoard[i] > 0) {
+                if (gameBoard[i] % 2 == 0) {
+                    es.fitWidthProperty().bind(p.widthProperty());
+                    es.fitHeightProperty().bind(p.heightProperty());
+
+                    es.setOnMouseClicked(event -> {
+                        responseLabel.setText("Opponents stone. No action");
+                    });
+
+                    p.getChildren().add(es);
+                } else {
+                    ps.fitWidthProperty().bind(p.widthProperty());
+                    ps.fitHeightProperty().bind(p.heightProperty());
+
+                    ps.setOnMouseClicked(event -> {
+                        int paneID = Integer.parseInt(((ImageView) event.getSource()).getParent().getId());
+                        imageViewEvent(paneID);
+
+                        System.out.println("You clicked " + paneID);
+                    });
+
+                    p.getChildren().add(ps);
+                }
+            }
+
+//            if(gameBoard[i] == 2) {
+//                es.fitWidthProperty().bind(p.widthProperty());
+//                es.fitHeightProperty().bind(p.heightProperty());
+//
+//                es.setOnMouseClicked(event -> {
+//                        responseLabel.setText("Opponents stone. No action");
+//                });
+//
+//                p.getChildren().add(es);
+//            } else if(gameBoard[i] == 1) {
+//                ps.fitWidthProperty().bind(p.widthProperty());
+//                ps.fitHeightProperty().bind(p.heightProperty());
+//
+//                ps.setOnMouseClicked(event -> {
+//                    int paneID = Integer.parseInt(((ImageView) event.getSource()).getParent().getId());
+//                    imageViewEvent(paneID);
+//
+//                    System.out.println("You clicked " + paneID);
+//                });
+//
+//                p.getChildren().add(ps);
+//            }
+//
+//            //debug
+//            else if(gameBoard[i] == 3) {
+//                if(playerColor == PSColor.BLACK) {
+//                    ps = new ImageView(redKing);
+//                } else {
+//                    ps = new ImageView(blueKing);
+//                }
+//
+//
+//                ps.fitWidthProperty().bind(p.widthProperty());
+//                ps.fitHeightProperty().bind(p.heightProperty());
+//
+//                ps.setOnMouseClicked(event -> {
+//                    int paneID = Integer.parseInt(((ImageView) event.getSource()).getParent().getId());
+//                    imageViewEvent(paneID);
+//
+//                    System.out.println("You clicked " + paneID);
+//                });
+//
+//                p.getChildren().add(ps);
+//            } else if(gameBoard[i] == 4) {
+//                if(playerColor == PSColor.BLACK) {
+//                    es = new ImageView(blueKing);
+//                } else {
+//                    es = new ImageView(redKing);
+//                }
+//
+//                es.fitWidthProperty().bind(p.widthProperty());
+//                es.fitHeightProperty().bind(p.heightProperty());
+//
+//                es.setOnMouseClicked(event -> {
+//                    responseLabel.setText("Opponents stone. No action");
+//                });
+//
+//                p.getChildren().add(es);
+//            }
+//            //end debug
 
 
             else {
@@ -255,37 +289,37 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
      */
     private void highlightMoves(int paneID) {
         ArrayList<Integer> hl = new ArrayList<>();
-//        client.getGame().getPossibleMoves(paneID, hl, false, paneID, 0);
-        client.getGame().getPossibleMoves_v2(paneID, hl, 0);
+        client.getGame().getPossibleMoves(paneID, hl, false, paneID, 0);
+//        client.getGame().getPossibleMoves_v2(paneID, hl, 0);
 
-        if(!hl.isEmpty()) {
-            for(int i : hl) {
-                    getPaneWithID(i).setStyle("-fx-background-color: #00FF00");
-                    getPaneWithID(i).setOnMouseClicked(event -> {
-                        clickedHL(paneID, i);
-                    });
-
-                highlightedPanes.add(i);
-            }
-        } else {
-            System.out.println("HIGHLIGHT LIST IS NULL");
-        }
 //        if(!hl.isEmpty()) {
 //            for(int i : hl) {
-//                if(Math.abs(paneID - i) > 2 * 9) {
-//                    getPaneWithID(i).setStyle("-fx-background-color: #00FF00");
-//                } else {
-//                    getPaneWithID(i).setStyle("-fx-background-color: YELLOW");
-//                    getPaneWithID(i).setOnMouseClicked(event -> {
-//                        clickedHL(paneID, i);
-//                    });
-//                }
+//                getPaneWithID(i).setStyle("-fx-background-color: #00FF00");
+//                getPaneWithID(i).setOnMouseClicked(event -> {
+//                    clickedHL(paneID, i);
+//                });
 //
 //                highlightedPanes.add(i);
 //            }
 //        } else {
 //            System.out.println("HIGHLIGHT LIST IS NULL");
 //        }
+        if(!hl.isEmpty()) {
+            for(int i : hl) {
+                if(Math.abs(paneID - i) > 2 * 9) {
+                    getPaneWithID(i).setStyle("-fx-background-color: #00FF00");
+                } else {
+                    getPaneWithID(i).setStyle("-fx-background-color: YELLOW");
+                    getPaneWithID(i).setOnMouseClicked(event -> {
+                        clickedHL(paneID, i);
+                    });
+                }
+
+                highlightedPanes.add(i);
+            }
+        } else {
+            System.out.println("HIGHLIGHT LIST IS NULL");
+        }
     }
 
     /**
@@ -294,10 +328,11 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
      * @param clicked to
      */
     private void clickedHL(int source, int clicked) {
-//        unHighlightProximity(source);
+        unHighlightProximity(source);
 
         if(moveSequence.isEmpty()) {
             moveSequence.addFirst(source);
+            firstClick = source;
 
             unsetImageViewEventsExceptID(client.getGame().getPlayerStoneIndexes(), source);
         }
@@ -306,8 +341,8 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
 
         movePiece(source, clicked);
 
-//        if(client.getGame().canMoveAgain(source, clicked) && highlightMoves(clicked,true)) {
         if(client.getGame().canMoveAgain(source, clicked) && !highlightedPanes.isEmpty()) {
+//        if(client.getGame().canMoveAgain(source, clicked)) {
             System.out.println("more moves to make");
 
             try {
@@ -315,6 +350,11 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
             } catch (IndexOutOfBoundsException e) {
                 System.err.println("Welp continuous");
             }
+
+//            highlightedPanes.clear();
+
+//            ArrayList<Integer> plsWork = new ArrayList<>();
+//            client.getGame().getPossibleMoves_v2(clicked, plsWork, (clicked - source), firstClick);
 
             highlightProximity(clicked);
 
@@ -339,6 +379,15 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
             for(int i : moveSequence) {
                 client.addRequestPar(i + "");
             }
+        }
+    }
+
+    private void highlightPanes(int source) {
+        for(int i : highlightedPanes) {
+            getPaneWithID(i).setStyle("-fx-background-color: #00FF00");
+            getPaneWithID(i).setOnMouseClicked(event -> {
+                clickedHL(source, i);
+            });
         }
     }
 

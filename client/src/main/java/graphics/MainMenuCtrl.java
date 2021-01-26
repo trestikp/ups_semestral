@@ -111,6 +111,7 @@ public class MainMenuCtrl extends OverlordCtrl implements CtrlNecessities {
     public void quit(ActionEvent actionEvent) {
         if(client.isClientConnected()) {
             client.setInstruction(Instruction.DISCONNECT);
+            client.setQuitAfterDisconnect(true);
         } else {
             if(client.getAutomaton().validateTransition(Action.QUIT)) {
                 client.getAutomaton().makeTransition(Action.QUIT);
@@ -118,7 +119,7 @@ public class MainMenuCtrl extends OverlordCtrl implements CtrlNecessities {
                 responseLabel.setText("Invalid automaton transition");
             }
 
-            Platform.exit();
+            System.exit(0);
         }
     }
 

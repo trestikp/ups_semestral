@@ -63,7 +63,7 @@ public class Game {
         };
 
         for(int i = 40; i < gameBoard.length; i++) {
-            if(gameBoard[i] == 1)
+            if(gameBoard[i] == 1 || gameBoard[i] == 3)
                 playerStoneIndexes.add(i);
         }
     }
@@ -162,14 +162,15 @@ public class Game {
         }
     }
 
-    public void getPossibleMoves_v2(int indexPosition, ArrayList<Integer> positions, int bannedDir) {
+    public void getPossibleMoves_v2(int indexPosition, ArrayList<Integer> positions,
+                                    int bannedVect, int originalPosition) {
         int start, target;
         boolean isKing;
         int[] dirVectors = {-7, -9, 7, 9};
 
-        if(gameBoard[indexPosition] == 3) {
+        if(gameBoard[originalPosition] == 3) {
             isKing = true;
-        } else if(gameBoard[indexPosition] == 1) {
+        } else if(gameBoard[originalPosition] == 1) {
             isKing = false;
         } else {
             System.err.println("Somehow player tried to get moves for field without his stone");
@@ -178,7 +179,7 @@ public class Game {
 
         if(isKing) {
             for(int i = 0; i < 4; i++) {
-                if(dirVectors[i] == bannedDir) continue;
+                if(dirVectors[i] == getDirectionFromVector(bannedVect)) continue;
 
                 start = indexPosition;
 
@@ -191,17 +192,6 @@ public class Game {
                     positions.add(target);
                     start = target;
                 }
-
-//                while (true) {
-//                    target = getDirectionTarget(start, dirVectors[i]);
-//
-//                    if (target != -1 && Math.abs(start - target) < 14) {
-//                        break;
-//                    }
-//
-//                    positions.add(target);
-//                    start = target;
-//                }
             }
         } else {
             for(int i = 0; i < 2; i++) {
@@ -212,21 +202,6 @@ public class Game {
                 }
             }
         }
-
-//        for(int i = 0; i < dirs; i++) {
-//            start = indexPosition;
-//
-//            while(true) {
-//                target = getDirectionTarget(start, dirVectors[i]);
-//
-//                if(target != -1 && Math.abs(start - target) < 14) {
-//                    break;
-//                }
-//
-//                positions.add(target);
-//                start = target;
-//            }
-//        }
     }
 
     /**
@@ -312,7 +287,26 @@ public class Game {
      * @return true/ false
      */
     public boolean canMoveAgain(int from, int to) {
-        return (to - from) == 2 * -7 || (to - from) == 2 * -9 || (to - from == 2 * 7 || (to - from) == 2 * 9);
+        int dir = getDirectionFromVector((to - from));
+
+        for(int i = 0; i < ((to - from) / dir); i++) {
+            if(gameBoard[from + (to - from) * i] % 2 == 0) return true;
+        }
+
+        return false;
+//        return (to - from) == 2 * -7 || (to - from) == 2 * -9 || (to - from == 2 * 7 || (to - from) == 2 * 9);
+    }
+
+    public int getDirectionFromVector(int vector) {
+        if(vector < 0) {
+            if(vector % 7 == 0) return -7;
+            else if(vector % 9 == 0) return -9;
+            else return 0; // i won't actually check for this, as it shouldn't happen theoretically
+        } else {
+            if(vector % 7 == 0) return 7;
+            else if(vector % 9 == 0) return 9;
+            else return 0; // same
+        }
     }
 
     /**

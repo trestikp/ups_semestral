@@ -18,7 +18,7 @@ public enum Action {
     WIN         ("win"              , 11),
     LOSE        ("lose"             , 12),
     END         ("end"              , 13),
-    PAUSE       ("pause"            , 100);
+    OPP_TURN    ("opponent_turn"    , 14);
 //    CONNECT         ("connect"              , 0),
 //    //REJECT          ("reject_connection"    , 1),
 //    QUEUE           ("queue"                , 1),

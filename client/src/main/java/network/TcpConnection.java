@@ -1,7 +1,11 @@
 package network;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketOption;
+
+import static java.net.SocketOptions.SO_REUSEADDR;
 
 public class TcpConnection {
     private Socket soc;
@@ -25,8 +29,9 @@ public class TcpConnection {
         boolean exc = false;
 
         try {
-            soc = new Socket(host, port);
-            //TODO: exceptions as GUI errors + logs?
+//            soc = new Socket(host, port);
+            soc = new Socket();
+            soc.connect(new InetSocketAddress(host, port), 5000);
         } catch(IOException e) {
             System.out.println("IO Exception on socket creation");
             exc = true;
@@ -63,6 +68,8 @@ public class TcpConnection {
             writer.close();
 
             soc.close();
+        } catch (IOException e) {
+            System.err.println("IO Exception on closing");
         } catch(Exception e) {
             System.err.println("Failed to safely close connection");
         }
