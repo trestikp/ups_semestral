@@ -909,7 +909,7 @@ void check_for_disconnects(fd_set* clients) {
 	player* p = NULL;
 	game* g = NULL;
 
-	printf("checking for disconnects \n");
+	//printf("checking for disconnects \n");
 
 	while(temp) {
 		if((time(NULL) - ((player*) temp->data)->last_com) >= 5) {
@@ -1074,9 +1074,19 @@ char* handle_message(char *message, int fd) {
 	}
 
 	inst = parse_instruction(parts[1]);
+
+	if(inst == INST_ERROR) return NULL;
+
 	if((rv = validate_instruction_par_count(inst, token_cnt))) {
 		if(p) {
 			p->strikes++;
+
+			//player didn't send CONNECT, don't disconnect! (giberrish from previous request)
+			if(p->connected == 0 && inst != CONNECT) {
+				additional_actions = 2;
+				return NULL;
+			}
+
 
 			if(p->strikes == 3) {
 				if(delete_player_with_id(&p_list, p->id)) {
@@ -1087,11 +1097,6 @@ char* handle_message(char *message, int fd) {
 				return NULL;
 			}
 
-			//player didn't send CONNECT, don't disconnect! (giberrish from previous request)
-			if(p->connected == 0 && inst != CONNECT) {
-				additional_actions = 2;
-				return NULL;
-			}
 		}
 		
 		switch(rv) {

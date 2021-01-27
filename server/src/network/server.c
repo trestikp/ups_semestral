@@ -212,6 +212,7 @@ int run_server(char* ip, int port) {
 
 						if(!response) {
 							if(additional_actions != 2) {
+								printf("Server closing FD %d\n", i);
 								close(i);
 								FD_CLR(i, &clients);
 							}
@@ -228,6 +229,7 @@ int run_server(char* ip, int port) {
 						//printf("Input handling took: %ldms\n", (end.tv_usec - start.tv_usec));
 					} else {
 						//TODO check if client was in-game -> wait for reconnect/ remove game
+						printf("Server closing FD %d\n", i);
 						close(i);
 						FD_CLR(i, &clients);
 					}
@@ -251,6 +253,8 @@ int run_server(char* ip, int port) {
 
 		gettimeofday(&loop_end, NULL);
 		//printf("Loop took: %ldms\n", (loop_end.tv_usec - loop_start.tv_usec));
+		
+		usleep(2);
 	}
 	
 	return 0;

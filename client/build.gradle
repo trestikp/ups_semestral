@@ -15,15 +15,12 @@ dependencies {
 
 javafx {
     version = "11.0.1"
-    modules = [ 'javafx.controls', 'javafx.fxml' ]
-
-    //appID 'client'
-    //mainClass 'main.java.graphics.Launcher'
- 
-    //jvmArgs = ['-XX:+AggressiveOpts', '-XX:CompileThreshold=1']
-    //arguments = ['-l', '--fast']
+    modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.graphics' ]
 }
 
+mainClassName = 'graphics.Launcher'
+
+/*
 jar {
     manifest {
         //attributes 'Main-Class': 'main.java.graphics.Launcher'
@@ -35,3 +32,4 @@ application {
     //mainClassName = 'main.java.graphics.Launcher'
     mainClassName = 'graphics.Launcher'
 }
+*/

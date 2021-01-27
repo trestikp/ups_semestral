@@ -7,13 +7,18 @@ logger:
 	${CC} ${PARAMS} -c src/logger.c
 
 server:
-	${CC} ${PARAMS} -c src/network/{server,controller,message_builder}.c
+	#${CC} ${PARAMS} -c src/network/{server,controller,message_builder}.c
+	${CC} ${PARAMS} -c src/network/server.c
+	${CC} ${PARAMS} -c src/network/controller.c
+	${CC} ${PARAMS} -c src/network/message_builder.c
 
 gf:
 	${CC} ${PARAMS} -c src/general_functions.c
 
 app:
-	${CC} ${PARAMS} -c src/app/{game,player}.c
+	#${CC} ${PARAMS} -c src/app/{game,player}.c
+	${CC} ${PARAMS} -c src/app/game.c
+	${CC} ${PARAMS} -c src/app/player.c
 
 remove_o:
 	rm -f *.o
