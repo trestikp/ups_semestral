@@ -32,6 +32,7 @@ game* extract_game_by_name(l_link** head, char* lobby_name);
 
 player* check_for_victory(game* g);
 player* get_your_opponent(game* g, player* p);
+char* gameboard_to_string(game* g);
 
 int delete_game_from_list(l_link **head, game* g);
 

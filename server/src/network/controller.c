@@ -28,6 +28,8 @@ l_link* g_playing = NULL;
 /** id_counter servers for assigning id to players */
 int id_counter = 1;
 
+int player_count = 0;
+
 /**
 	Instruction strings for OPPONENT instruction
 */
@@ -388,6 +390,9 @@ char* connect_my(int* player_id, char* username, int fd) {
 	player *p = NULL;
 	game *g = NULL;
 
+
+	
+
 	if(!username) {
 		return construct_message(*player_id, 402, "Username is empty");
 	}
@@ -400,8 +405,11 @@ char* connect_my(int* player_id, char* username, int fd) {
 		return construct_message(*player_id, 404, "Username already in use");
 	}
 
-
 	if(*player_id == 0) { //new player
+		if(player_count >= max_con) {
+			return construct_message(*player_id, 408, "Maximum number of connection reached");
+		}
+
 		p = add_player(fd);
 	
 		if(!p) {
@@ -432,6 +440,9 @@ char* connect_my(int* player_id, char* username, int fd) {
 		id_counter++;
 
 		*player_id = p->id;
+		player_count++;
+
+		printf("Player count %d out of %d\n", player_count, max_con);
 	
 		return construct_message(*player_id, 201, "Connection success");
 	} else { //reconnection/ attack
@@ -470,8 +481,32 @@ char* connect_my(int* player_id, char* username, int fd) {
 
 				if(g->on_turn == p) { //TODO append gamestate in case opponent moved before disc
 					append_parameter(&msg, "turn");
+
+					char* board = gameboard_to_string(g);
+					if(!board) return construct_message(p->id, 408, "Failed to attach gameboad");
+
+					append_parameter(&msg, board);
+					free(board);
+
+					char temp[2] = {0};
+					sprintf(temp, "%d", p->on_top);
+
+					append_parameter(&msg, temp);
+					append_parameter(&msg, opponent->username);
 				} else {
 					append_parameter(&msg, "opponents_turn");
+
+					char* board = gameboard_to_string(g);
+					if(!board) return construct_message(p->id, 408, "Failed to attach gameboad");
+
+					append_parameter(&msg, board);
+					free(board);
+
+					char temp[2] = {0};
+					sprintf(temp, "%d", p->on_top);
+
+					append_parameter(&msg, temp);
+					append_parameter(&msg, opponent->username);
 				}
 			}
 
@@ -711,6 +746,7 @@ char* turn(player* p, char* parts[32], int parts_count) {
 		if(validate_move(pars[i - 1], pars[i], p, g, i)) {
 			printf("Failed verify move from %d to %d\n", pars[i - 1], pars[i]);
 
+		//TODO remove this is for debug
 		validate_move(pars[i - 1], pars[i], p, g, i);
 
 			print_gameboard(g);
@@ -856,6 +892,8 @@ char* disconnect(player* p) {
 
 	printf("Disconnected user");
 
+	player_count--;
+
 	return construct_message(0, 201, "You were disconnected");
 }
 
@@ -874,22 +912,24 @@ void check_for_disconnects(fd_set* clients) {
 	printf("checking for disconnects \n");
 
 	while(temp) {
-		if((time(NULL) - ((player*) temp->data)->last_com) > 5) {
+		if((time(NULL) - ((player*) temp->data)->last_com) >= 5) {
 			p = (player*) temp->data;
 
 			if(p->connected == 0) {
 				//if he had one
 				printf("Player %d got %lds left to reconnect\n", p->id, 
-						(600 - (time(NULL) - p->last_com)));
+						(300 - (time(NULL) - p->last_com)));
 						//(60 - (time(NULL) - p->last_com)));
 				temp = temp->next;
 
-				if((time(NULL) - p->last_com) >= 600) {
+				if((time(NULL) - p->last_com) >= 300) {
 				//if((time(NULL) - p->last_com) >= 60) {
 					FD_CLR(p->socket, clients);
 					close(p->socket);
 				
 					remove_disconnected_player(p);
+
+					player_count--;
 				}
 
 
@@ -919,31 +959,51 @@ void check_for_disconnects(fd_set* clients) {
 						continue;
 					}
 
-					if(g->p1 == p) {
-						if(g->p2->socket < 0) {
-							printf("Opponent doesn't have socket. Disconnected");
+					player* opponent = get_your_opponent(g, p);
+
+					if(opponent) {
+						if(opponent->socket < 0) {
+							printf("Opponent doesn't have socket. Disconnected\n");
 						} else {
 							op_msg = construct_message_with_inst(g->p2->id,
 								inst_string[OPPONENT_DISC], 201, "Opponent disconnected");
+							rv = send(opponent->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
+
+							if(rv < 0) printf("Failed to contact opponent about disconnect\n");
+
+							free(op_msg);
+						}
+					} else {
+						printf("Failed to find opponent while reconnecting\n");
+					}
+
+					/*
+					if(g->p1 == p) {
+						if(g->p2->socket < 0) {
+							printf("Opponent doesn't have socket. Disconnected\n");
+						} else {
+							op_msg = construct_message_with_inst(g->p2->id,
+								inst_string[OPPONENT_DISC], 201, "Opponent disconnected\n");
 							rv = send(g->p2->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
 
-							if(rv < 0) printf("Failed to contact opponent about disconnect");
+							if(rv < 0) printf("Failed to contact opponent about disconnect\n");
 
 							free(op_msg);
 						}
 					} else {
 						if(g->p1->socket < 0) {
-							printf("Opponent doesn't have socket. Disconnected");
+							printf("Opponent doesn't have socket. Disconnected\n");
 						} else {
 							op_msg = construct_message_with_inst(g->p1->id,
-								inst_string[OPPONENT_DISC], 201, "Opponent disconnected");
+								inst_string[OPPONENT_DISC], 201, "Opponent disconnected\n");
 							rv = send(g->p1->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
 
-							if(rv < 0) printf("Failed to contact opponent about disconnect");
+							if(rv < 0) printf("Failed to contact opponent about disconnect\n");
 
 							free(op_msg);
 						}
 					}
+					*/
 
 				//printf(">>> OP_RESP: %s\n", op_msg);
 				//printf(">>> SEND_RV: %d\n", rv);
@@ -1027,8 +1087,9 @@ char* handle_message(char *message, int fd) {
 				return NULL;
 			}
 
-			//player didn't send CONNECT
+			//player didn't send CONNECT, don't disconnect! (giberrish from previous request)
 			if(p->connected == 0 && inst != CONNECT) {
+				additional_actions = 2;
 				return NULL;
 			}
 		}
@@ -1050,7 +1111,11 @@ char* handle_message(char *message, int fd) {
 
 	//if player exists, but isn't connected, and instruction isn't CONNECT -> disconnect
 	//doesn't remove player from list, so player can still reconnect with CONNECT
-	if(p && !p->connected && inst != CONNECT)  return NULL;
+	if(p && !p->connected && inst != CONNECT) {
+		additional_actions = 2;
+
+		return NULL;
+	}
 
 	switch(inst) {
 		case LOBBY: reply = lobby(p); break;
@@ -1075,7 +1140,7 @@ char* handle_message(char *message, int fd) {
 	//printf("\n==============================\n");
 
 	if(inst != PING) printf(">>> BUFFER: %s\n", debug_copy);
-	if(reply && inst != PING) printf(">>> RESPONSE: %s\n", reply);
+	if(reply && inst != PING) printf(">>> RESPONSE: %s with len %ld to socket %d\n\n", reply, strlen(reply), fd);
 
 	if(reply) return reply;
 	else 	  return construct_message(parsed_id, 400, "Failed to construct reply");

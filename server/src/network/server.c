@@ -98,7 +98,9 @@ int input_handler(char *buffer, int socket) {
 	
 		if(!response) return 1;
 
-		//printf(">>> RESPONSE: %s\n", response);
+		//printf(">>> RESPONSE: %s with len %ld to %d\n", response, strlen(response), socket);
+
+		printf("HANDLING REQUEST NUM %d\n", cnt);
 	
 		int rv = send(socket, response, strlen(response), MSG_CONFIRM);
 	
@@ -196,10 +198,31 @@ int run_server(char* ip, int port) {
 						recv(i, buffer, BUFFER_SIZE - 1, 0);
 
 						gettimeofday(&start, NULL);
+						/*
 						if(input_handler(buffer, i)) {
-							close(i);
-							FD_CLR(i, &clients);
+							//addition_action 2 is to prevent disconnect on NULL message
+							if(additional_actions != 2) {
+								close(i);
+								FD_CLR(i, &clients);
+							}
 						}
+						*/
+
+						char* response = handle_message(buffer, i);
+
+						if(!response) {
+							if(additional_actions != 2) {
+								close(i);
+								FD_CLR(i, &clients);
+							}
+						} else {
+							rv = send(i, response, strlen(response), MSG_CONFIRM);
+
+							if(rv < 0) printf("Server failed to send response");
+
+							free(response);
+						}
+
 						gettimeofday(&end, NULL);
 						
 						//printf("Input handling took: %ldms\n", (end.tv_usec - start.tv_usec));
@@ -214,7 +237,7 @@ int run_server(char* ip, int port) {
 
 		memset(&client_socket, 0, sizeof(struct sockaddr_in));
 
-		if((time(NULL) - last_check) >= 5) {
+		if((time(NULL) - last_check) >= 2) {
 		//if((time(NULL) - last_check) > 4) {
 
 			gettimeofday(&start, NULL);

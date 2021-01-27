@@ -81,8 +81,11 @@ public class TcpMessage {
 
         int p;
 
+        if(i == null) return false; //dunno why, sometimes null still gets here
+
         switch (i) {
-            case QUICK_PLAY: case CONNECT: case JOIN_GAME: case OPPONENT_JOIN: p = 1; break;
+            case QUICK_PLAY: case JOIN_GAME: case OPPONENT_JOIN: p = 1; break;
+            case CONNECT: p = 4; break;
             case TURN: case OPPONENT_TURN: p = 30; break;
             case LOBBY: p = 512; break; // "random" number, should have limited number of rooms on server
             default: p = 0;

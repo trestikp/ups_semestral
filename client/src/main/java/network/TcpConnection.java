@@ -33,16 +33,16 @@ public class TcpConnection {
             soc = new Socket();
             soc.connect(new InetSocketAddress(host, port), 5000);
         } catch(IOException e) {
-            System.out.println("IO Exception on socket creation");
+            System.err.println("IO Exception on socket creation");
             exc = true;
         } catch(IllegalArgumentException e) {
-            System.out.println("Illegal argument on socket creation");
+            System.err.println("Illegal argument on socket creation");
             exc = true;
         } catch(NullPointerException e) {
-            System.out.println("Null pointer on socket creation");
+            System.err.println("Null pointer on socket creation");
             exc = true;
         } catch(Exception e) {
-            System.out.println("Unknown socket exception!\n");
+            System.err.println("Unknown socket exception!\n");
             exc = true;
             e.printStackTrace();
         }
@@ -53,11 +53,11 @@ public class TcpConnection {
             reader = new BufferedReader(new InputStreamReader(soc.getInputStream()));
             writer = new PrintWriter(new OutputStreamWriter(soc.getOutputStream()));
         } catch(IOException e) {
-            System.out.println("IO Exception on stream creation");
+            System.err.println("IO Exception on stream creation");
         } catch(NullPointerException e) {
-            System.out.println("Null pointer on stream creation");
+            System.err.println("Null pointer on stream creation");
         } catch(Exception e) {
-            System.out.println("Unknown stream exception!\n");
+            System.err.println("Unknown stream exception!\n");
             e.printStackTrace();
         }
     }
@@ -76,7 +76,7 @@ public class TcpConnection {
     }
 
     public void sendMessageTxt(String msg) {
-        if(!msg.contains("PING")) //TODO remove
+        if(!msg.contains("PING"))
             System.out.println("Sending: " + msg);
 
         try {
@@ -87,7 +87,7 @@ public class TcpConnection {
         }
     }
 
-    public TcpMessage recieveMessage() {
+    public TcpMessage receiveMessage() {
         String res;
 
         try {
@@ -95,7 +95,7 @@ public class TcpConnection {
                 res = reader.readLine();
                 if(res == null) return null;
 
-                if(!res.contains("PING")) // TODO remove
+                if(!res.contains("PING"))
                     System.out.println(res);
 
                 return new TcpMessage(res);

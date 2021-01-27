@@ -38,6 +38,7 @@ public class Client implements Runnable {
 
     /** Instruction to be sent to server */
     private Instruction inst = null;
+    private Instruction expectingFirst = null;
 
     /** Request parameters */
     private ArrayList<String> requestPar = new ArrayList<>();
@@ -100,8 +101,6 @@ public class Client implements Runnable {
                 e.printStackTrace();
             }
 
-
-
 //            if(connection != null && connection.getSoc() != null && connection.getSoc().isConnected()) {
             updateStatusElements();
 
@@ -120,8 +119,7 @@ public class Client implements Runnable {
                     if(rv) {
                         waitingForReply = true;
                     } else {
-                        //TODO failed to send request
-                        handleError(inst);
+                        status.setResponseText("Failed to send request");
 
                         inst = null;
                     }
@@ -129,7 +127,7 @@ public class Client implements Runnable {
             }
 
             if(isClientConnected()) { //existing socket
-                msg = connection.recieveMessage();
+                msg = connection.receiveMessage();
 
 //                System.err.println("CONNECTED: " + CONNECTED);
 
@@ -190,6 +188,8 @@ public class Client implements Runnable {
                             connection = null;
                             CONNECTED = false;
 
+                            opponentConnected = false;// TODO right here right?
+
                             auto.setGameState(State.LOST_CON);
                             status.setResponseText("Cannot contact server. Reconnecting");
 
@@ -197,7 +197,7 @@ public class Client implements Runnable {
                         }
                     } else {
                         if(wasConnected && (System.currentTimeMillis() - lastReconnectAttempt) > 5000) {
-                            System.err.println("Closing connection here");
+                            System.err.println("You have socket, but aren't CONNECTED");
 
                             //reconnection attempt might have established connection but failed to CONNECT
                             if(connection != null) {
@@ -205,7 +205,7 @@ public class Client implements Runnable {
                                 connection = null;
                             }
                         } else {
-                            System.out.println("I'm getting there");
+//                            System.out.println("I'm getting there");
                         }
                     }
                 }
@@ -215,24 +215,25 @@ public class Client implements Runnable {
                     sendPing();
                 }
             } else {
-//                System.err.println("No connection. Reconnecting?");
-
-                System.err.println("I am moving here right with " + ((System.currentTimeMillis() - lastReconnectAttempt) / 1000) + " and " + wasConnected);
-
                 //user was connected but hasn't attempted reconnect for more then 5s
                 if((System.currentTimeMillis() - lastReconnectAttempt) > 5000 && wasConnected) {
+//                    reset move sequence if turn wasn't confirmed
+                    if(inst == Instruction.TURN && waitingForReply) {
+                        requestPar.clear();
+                        inst = null;
+                        waitingForReply = false;
+
+                        Platform.runLater(() -> {
+                            ((GameboardCtrl) currentCtrl).resetMoveSequence();
+                            ((GameboardCtrl) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
+                        });
+                    }
+
                     System.err.println(((System.currentTimeMillis() - lastCommunication) / 1000) + "s since last communication");
 
-//                    waitingForReply = false;
-//                    setInstruction(Instruction.CONNECT);
-
                     //if user is disconnected for more then 60s show reconnect
-//                    if((System.currentTimeMillis() - lastReconnectAttempt) > 120000 && !showingReconnect) {
-//                    if((System.currentTimeMillis() - lastCommunication) > 120000 && !showingReconnect) {
                     if((System.currentTimeMillis() - lastCommunication) > 30000 && !showingReconnect) {
 
-
-                        System.err.println("This is the inner shit");
                         //if connection isn't restored within 5 minutes, stop reconnecting (server removed player)
                         if((System.currentTimeMillis() - lastCommunication) >= 300000) {
                             System.out.println("Failed to reestablish connection.");
@@ -240,7 +241,10 @@ public class Client implements Runnable {
 
                             Platform.runLater(() -> {
                                 currentCtrl.genericSetScene("main_menu_disconnected.fxml");
+                                status.setResponseText("You can't reconnect after 5 minutes");
                             });
+
+                            continue;
                         }
 
                         showingReconnect = true;
@@ -257,18 +261,6 @@ public class Client implements Runnable {
                         waitingForReply = false;
                         setInstruction(Instruction.CONNECT);
                     }
-
-                    //TODO move this somewhere before setting CONNECT inst
-                    //reset move sequence if turn wasn't confirmed
-//                    if(inst == Instruction.TURN && waitingForReply) {
-//                        inst = null;
-//                        waitingForReply = false;
-//
-//                        Platform.runLater(() -> {
-//                            ((GameboardCtrl) currentCtrl).resetMoveSequence();
-//                            ((GameboardCtrl) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
-//                        });
-//                    }
                 } else {
                     if(!CONNECTED) {
                         inst = null;
@@ -276,11 +268,11 @@ public class Client implements Runnable {
                     }
                 }
 
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+//                try {
+//                    Thread.sleep(1000);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
             }
         }
     }
@@ -307,7 +299,9 @@ public class Client implements Runnable {
             return false;
         }
 
+        System.err.println("---Socket---");
         connection = new TcpConnection(host, port);
+        System.err.println("----End-----");
 
         if(connection.getSoc() == null) {
             System.err.println("Failed to create socket");
@@ -357,6 +351,10 @@ public class Client implements Runnable {
     private boolean sendRequest(Instruction inst) {
         boolean rv = true;
 
+        if(inst != Instruction.CONNECT && !CONNECTED) {
+            return false;
+        }
+
         switch (inst) {
             case CONNECT: sendConnect(); break;
             case DISCONNECT: sendDisconnect(); break;
@@ -376,6 +374,10 @@ public class Client implements Runnable {
      * @param reply server reply
      */
     private void handleRequest(TcpMessage reply) {
+        if(!CONNECTED && reply.getInst() != Instruction.CONNECT) {
+            System.out.println("Ahh unexpected server response on CONNECT");
+        }
+
         switch (inst) {
             case CONNECT: handleConnect(reply); break;
             case DISCONNECT: handleDisconnect(reply); break;
@@ -456,37 +458,6 @@ public class Client implements Runnable {
             } else {
                 status.setResponseText("Received unknown code for OPPONENT_TURN");
             }
-//            else if(msg.getResponseCode() == 204) {
-//                if (getAutomaton().validateTransition(Action.LOSE)) {
-//                    auto.makeTransition(Action.LOSE);
-//
-//                    Platform.runLater(() -> {
-//                        currentCtrl.genericSetScene("main_menu_connected.fxml");
-//                        status.setResponseText(msg.getResponseText());
-//                    });
-//
-////                    sendReply(true);
-//                } else {
-//                    status.setResponseText("Automaton is in wrong state");
-//                }
-//            } else if(msg.getResponseCode() == 203) {
-//                //there is currently no real difference between "win" and "lose" transitions, but could server for
-//                //stat logging
-//                if (getAutomaton().validateTransition(Action.WIN)) {
-//                    auto.makeTransition(Action.WIN);
-//
-//                    Platform.runLater(() -> {
-//                        currentCtrl.genericSetScene("main_menu_connected.fxml");
-//                        status.setResponseText(msg.getResponseText());
-//                    });
-//
-////                    sendReply(true);
-//                } else {
-//                    status.setResponseText("Automaton is in wrong state");
-//                }
-//            } else {
-//                status.setResponseText("Recieved unknown code for OPPONENT_TURN");
-//            }
         } else if(msg.getInst() == Instruction.PING) {                                                          //PING
             pingResponse = true;
         } else if(msg.getInst() == Instruction.OPPONENT_DISC) {                                         //OPPONENT_DISC
@@ -498,10 +469,25 @@ public class Client implements Runnable {
                 }
             });
 
-            auto.setGameState(State.LOST_CON);
+//            auto.setGameState(State.LOST_CON);
             status.setResponseText("Opponent lost connection. Waiting..");
         } else if(msg.getInst() == Instruction.OPPONENT_RECO) {
             opponentConnected = true;
+
+            Platform.runLater(() -> {
+                if(currentCtrl instanceof GameboardCtrl) {
+                    ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
+                }
+//                if(currentCtrl instanceof GameboardCtrl && auto.getGameState() == State.TURN) {
+//                    ((GameboardCtrl) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
+//                }
+//
+//                if(currentCtrl instanceof GameboardCtrl && auto.getGameState() == State.OPPONENT_TURN) {
+//                    ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
+//                }
+
+                status.setResponseText("Opponent reconnected");
+            });
         }
     }
 
@@ -522,16 +508,6 @@ public class Client implements Runnable {
         sb.append('\n');
 
         connection.sendMessageTxt(sb.toString());
-    }
-
-    /**
-     * Handles sendRequest error
-     * @param inst Instruction which failed to send request
-     */
-    private void handleError(Instruction inst) {
-        switch (inst) {
-            case CREATE_LOBBY: errorHandleCreateLobby();
-        }
     }
 
 /*---------------------------------------------------------------------------------------------------------------------|
@@ -752,14 +728,76 @@ public class Client implements Runnable {
                         currentCtrl.genericSetScene("main_menu_connected.fxml");
                         status.setResponseText(reply.getResponseText());
                     });
-                } else if(reply.getParams()[0].equals(State.TURN.getName())) {
-                    auto.setGameState(State.TURN);
+                } else if(reply.getParams()[0].equals(State.TURN.getName()) ||
+                        reply.getParams()[0].equals(State.OPPONENT_TURN.getName())) {
+                    if(reply.getParams()[0].equals(State.TURN.getName())) auto.setGameState(State.TURN);
+                    else auto.setGameState(State.OPPONENT_TURN);
+
+                    if(game == null) {
+                        if(reply.getParams()[2].length() > 1) System.err.println("Expected 1 or 0, entered string is longer");
+                        char onTop = reply.getParams()[2].charAt(0);
+                        if(Character.getNumericValue(onTop) == 1) {
+                            game = new Game(PSColor.BLACK);
+                        } else if(Character.getNumericValue(onTop) == 0) {
+                            game = new Game(PSColor.WHITE);
+                        } else {
+                            System.err.println("onTop must be 1 or 0!! Failed reconnect");
+                            return;
+                        }
+                    }
+
+                    opponentName = reply.getParams()[3];
+                    opponentConnected = true;
+
+                    game.updateGameboardByServer(reply.getParams()[1]);
+                    game.updatePlayerStoneIndexes();
 
                     Platform.runLater(() -> {
-                        ((GameboardCtrl) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
+                        if(!(currentCtrl instanceof GameboardCtrl)) {
+                            currentCtrl.genericSetScene("gameboard_v2.fxml");
+
+                            status.opponentNameLabel.setText("Opponent: " + opponentName);
+                            setOpponentVisible();
+                        }
+
+                        ((GameboardCtrl) currentCtrl).initStones();
+                        ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
+//                        if(auto.getGameState() == State.OPPONENT_TURN) {
+//                            ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
+//                        }
+                        game.printGameBoard();
                     });
-                } else if(reply.getParams()[0].equals(State.OPPONENT_TURN.getName())) {
-                    auto.setGameState(State.OPPONENT_TURN);
+
+//                    if(reply.getParams()[0].equals(State.TURN.getName())) {
+//                    auto.setGameState(State.TURN);
+//
+//                    boolean rv = game.validateGameboard(reply.getParams()[1]);
+//
+//                    Platform.runLater(() -> {
+//                        if(rv) {
+//                            game.updatePlayerStoneIndexes();
+//                            ((GameboardCtrl) currentCtrl).initStones();
+//                            ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
+//                            status.setResponseText("Gameboard didn't match. Using server gameboard");
+//                            game.printGameBoard(); // TODO blah
+//                        }
+//
+//                        ((GameboardCtrl) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
+//                    });
+//                } else if(reply.getParams()[0].equals(State.OPPONENT_TURN.getName())) {
+//                    auto.setGameState(State.OPPONENT_TURN);
+//
+//                    boolean rv = game.validateGameboard(reply.getParams()[1]);
+//
+//                    Platform.runLater(() -> {
+//                        if(rv) {
+//                            game.updatePlayerStoneIndexes();
+//                            ((GameboardCtrl) currentCtrl).initStones();
+//                            ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
+//                            status.setResponseText("Gameboard didn't match. Using server gameboard");
+//                            game.printGameBoard(); //TODO blah
+//                        }
+//                    });
                 } else {
                     doStrikeOrDisconnect(); //TODO do this or ignore?
 
@@ -791,12 +829,14 @@ public class Client implements Runnable {
                 connection.close();
                 connection = null;
                 CONNECTED = false;
+                opponentConnected = false;
             }
         } else {
             if(connection != null) {
                 connection.close();
                 connection = null;
                 CONNECTED = false;
+                opponentConnected = false;
             }
 
             status.setResponseText("Unknown response, closing connection");
@@ -928,6 +968,9 @@ public class Client implements Runnable {
                     opponentConnected = true;
 
                     initGUIBoard(reply);
+                    Platform.runLater(() -> {
+                        ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
+                    });
                 } else {
                     status.setResponseText("Automaton validation failed");
                 }
@@ -956,6 +999,7 @@ public class Client implements Runnable {
 
                             System.out.println("Moving form " + requestPar.get(i - 1) + " to " + requestPar.get(i));
                             game.moveFromTo(from, (to - from));
+//                            game.moveFromTo_v2(from, to, false);
                         }
                     } catch (NumberFormatException e) {
                         System.err.println("Failed to convert number");
@@ -1036,19 +1080,6 @@ public class Client implements Runnable {
 
 
         requestPar.clear();
-    }
-
-/*---------------------------------------------------------------------------------------------------------------------|
-|                                                                                                                      |
-|         Error handle methods                                                                                         |
-|                                                                                                                      |
-|---------------------------------------------------------------------------------------------------------------------*/
-
-    /**
-     * Handle lobby creation erro
-     */
-    private void errorHandleCreateLobby() {
-        status.setResponseText("Failed to create lobby");
     }
 
 /*---------------------------------------------------------------------------------------------------------------------|
@@ -1246,7 +1277,11 @@ public class Client implements Runnable {
 
             this.setInstruction(Instruction.JOIN_GAME);
             System.out.println("roomName: " + roomName.getText());
-            System.out.println("requestPar: " + requestPar.get(0));
+            try {
+                System.out.println("requestPar: " + requestPar.get(0));
+            } catch (IndexOutOfBoundsException e) {
+                System.err.println("Don't click join so fast!");
+            }
         });
 
         container.getChildren().addAll(roomName, joinRoom);

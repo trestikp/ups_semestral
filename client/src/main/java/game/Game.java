@@ -1,5 +1,6 @@
 package game;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 /**
@@ -42,24 +43,14 @@ public class Game {
                  1 , -1 ,  1 , -1 ,  1 , -1 ,  1 , -1, //7
 
 //                // 0    1    2    3    4    5    6    7
-//                -1 ,  2 , -1 ,  0 , -1 ,  2 , -1 ,  2, //0
+//                -1 ,  2 , -1 ,  2 , -1 ,  3 , -1 ,  2, //0
 //                2  , -1 ,  2 , -1 ,  0 , -1 ,  2 , -1, //1
-//                -1 ,  0 , -1 ,  0 , -1 ,  2 , -1 ,  2, //2
-//                0  , -1 ,  2 , -1 ,  2 , -1 ,  0 , -1, //3
-//                -1 ,  0 , -1 ,  1 , -1 ,  2 , -1 ,  0, //4
-//                1  , -1 ,  1 , -1 ,  1 , -1 ,  1 , -1, //5
-//                -1 ,  1 , -1 ,  1 , -1 ,  1 , -1 ,  1, //6
-//                1  , -1 ,  1 , -1 ,  1 , -1 ,  1 , -1, //7
-
-//                // 0    1    2    3    4    5    6    7
-//                -1 ,  2 , -1 ,  3 , -1 ,  2 , -1 ,  2, //0
-//                2 , -1 ,  0 , -1 ,  2 , -1 ,  2 , -1, //1
-//                -1 ,  0 , -1 ,  0 , -1 ,  0 , -1 ,  2, //2
-//                0 , -1 ,  0 , -1 ,  0 , -1 ,  2 , -1, //3
+//                -1 ,  2 , -1 ,  0 , -1 ,  2 , -1 ,  2, //2
+//                0  , -1 ,  2 , -1 ,  0 , -1 ,  0 , -1, //3
 //                -1 ,  0 , -1 ,  0 , -1 ,  0 , -1 ,  0, //4
-//                1 , -1 ,  1 , -1 ,  1 , -1 ,  1 , -1, //5
-//                -1 ,  1 , -1 ,  1 , -1 ,  1 , -1 ,  1, //6
-//                1 , -1 ,  1 , -1 ,  1 , -1 ,  1 , -1, //7
+//                0  , -1 ,  0 , -1 ,  1 , -1 ,  1 , -1, //5
+//                -1 ,  1 , -1 ,  2 , -1 ,  1 , -1 ,  1, //6
+//                1  , -1 ,  1 , -1 ,  0 , -1 ,  1 , -1, //7
         };
 
         for(int i = 40; i < gameBoard.length; i++) {
@@ -108,6 +99,27 @@ public class Game {
         }
 
         gameBoard[source] = 0;
+    }
+
+    public void moveFromTo_v2(int source, int to, boolean opponent) {
+        int vect = getDirectionFromVector(to - source);
+        int it = source;
+
+        System.err.println("vect: " + vect);
+
+        while(it != to) {
+            System.out.println("Moving over: " + it);
+            //returning false here could potentially break gameboard
+            if(opponent) {
+                if(gameBoard[it] == 1 || gameBoard[it] == 3) opponentJumpedOver.add(it);
+            } else {
+                if(gameBoard[it] == 2 || gameBoard[it] == 4) jumpedOver.add(it);
+            }
+
+            gameBoard[it] = 0;
+
+            it += vect;
+        }
     }
 
 
@@ -167,6 +179,8 @@ public class Game {
         int start, target;
         boolean isKing;
         int[] dirVectors = {-7, -9, 7, 9};
+        ArrayList<Integer> temp = new ArrayList<>();
+        boolean willJumpOver = false;
 
         if(gameBoard[originalPosition] == 3) {
             isKing = true;
@@ -179,7 +193,8 @@ public class Game {
 
         if(isKing) {
             for(int i = 0; i < 4; i++) {
-                if(dirVectors[i] == getDirectionFromVector(bannedVect)) continue;
+                //-dir from bannedVect!!! (bannedVect is actual move vector, and stone can't move in opposite direction)
+                if(dirVectors[i] == -getDirectionFromVector(bannedVect)) continue;
 
                 start = indexPosition;
 
@@ -187,9 +202,25 @@ public class Game {
                 for(int j = 0; j < 10; j++) { //for is used so the program can't get hung up on an infinite while
                     target = getDirectionTarget(start, dirVectors[i]);
 
-                    if (target == -1) break;
+                    if (target == -1) {
+                        if(willJumpOver) {
+                            positions.addAll(temp);
+                            willJumpOver = false;
+                        }
+                        temp.clear();
 
-                    positions.add(target);
+                        break;
+                    }
+
+                    if(indexPosition != originalPosition) {
+                        if(Math.abs(target - start) > 9) {
+                            willJumpOver = true; // >9 means the move is over stone
+                            temp.add(target);
+                        }
+                    } else {
+                        positions.add(target);
+                    }
+
                     start = target;
                 }
             }
@@ -198,7 +229,11 @@ public class Game {
                 target = getDirectionTarget(indexPosition, dirVectors[i]);
 
                 if(target != -1) {
-                    positions.add(target);
+                    if(indexPosition != originalPosition) {
+                        if(Math.abs(target - indexPosition) > 9) positions.add(target);
+                    } else {
+                        positions.add(target);
+                    }
                 }
             }
         }
@@ -287,17 +322,23 @@ public class Game {
      * @return true/ false
      */
     public boolean canMoveAgain(int from, int to) {
-        int dir = getDirectionFromVector((to - from));
-
-        for(int i = 0; i < ((to - from) / dir); i++) {
-            if(gameBoard[from + (to - from) * i] % 2 == 0) return true;
-        }
-
-        return false;
-//        return (to - from) == 2 * -7 || (to - from) == 2 * -9 || (to - from == 2 * 7 || (to - from) == 2 * 9);
+//        int dir = getDirectionFromVector((to - from));
+//
+//        System.err.println("from " + from + " to " + to + " is dir " + dir);
+//        System.err.println(("which is " + ((to - from) / dir) + "times"));
+//
+//        for(int i = 0; i < ((to - from) / dir); i++) {
+////            if(gameBoard[from + (to - from) * i] % 2 == 0) return true;       //yeah... % doesn't work 0 % 2 is true
+//            if(gameBoard[from + dir * i] == 2 || gameBoard[from + dir * i] == 4 ) return true;
+//        }
+//
+//        return false;
+        return (to - from) == 2 * -7 || (to - from) == 2 * -9 || (to - from == 2 * 7 || (to - from) == 2 * 9);
     }
 
     public int getDirectionFromVector(int vector) {
+        if(vector == 0) return 0;
+
         if(vector < 0) {
             if(vector % 7 == 0) return -7;
             else if(vector % 9 == 0) return -9;
@@ -332,6 +373,54 @@ public class Game {
             if(playerStoneIndexes.get(i) == index) {
                 playerStoneIndexes.remove(i);
                 return;
+            }
+        }
+    }
+
+    public boolean validateGameboard(String param) {
+        int count = 0;
+        boolean rv = true;
+
+        for(int i = 0; i < gameBoard.length; i++) {
+            if(gameBoard[i] >= 0) {
+                if(gameBoard[i] != Character.getNumericValue(param.charAt(count))) {
+                    gameBoard[i] = Character.getNumericValue(param.charAt(count));
+                    rv = false;
+                }
+                count++;
+            }
+        }
+
+        return rv;
+    }
+
+
+    private int inverseStone(int stone) {
+        switch (stone) {
+            case 1: return 2;
+            case 2: return 1;
+            case 3: return 4;
+            case 4: return 3;
+        }
+
+        return 0;
+    }
+    public void updateGameboardByServer(String param) {
+        int count = 0;
+
+        if(player == PSColor.BLACK) {
+            for(int i = 0; i < gameBoard.length; i++) {
+                if(gameBoard[i] >= 0) {
+                    gameBoard[i] = inverseStone(Character.getNumericValue(param.charAt(param.length() - 1 - count)));
+                    count++;
+                }
+            }
+        } else {
+            for(int i = 0; i < gameBoard.length; i++) {
+                if(gameBoard[i] >= 0) {
+                    gameBoard[i] = Character.getNumericValue(param.charAt(count));
+                    count++;
+                }
             }
         }
     }

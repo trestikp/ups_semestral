@@ -123,9 +123,78 @@ game* extract_game_by_name(l_link** head, char* lobby_name) {
         return out;
 }
 
+
+int get_dir_from_points(int from, int to) {
+	int vector = to - from;
+
+	if(vector < 0) {
+		if(!(vector % 7)) return -7;
+		if(!(vector % 9)) return -9;
+	} else {
+		if(!(vector % 7)) return 7;
+		if(!(vector % 9)) return 9;
+	}
+
+	return 0;
+}
+
+int validate_direction_step(int from, int dir, game* g, int on_top) {
+	int target = from + dir;
+
+	if(target < 0 || target > 63) { //target is out of board
+            return -1;
+        } else if(g->gameboard[target] == 0) { //target is empty field
+            return target;
+        } else {
+		if(on_top) {
+			if(g->gameboard[target] == 1 || g->gameboard[target] == 3) { //target is occupied by opponent stone
+           			target += dir;
+
+           			if(target < 0 || target > 63) return -1;
+           			if(g->gameboard[target] == 0) return target;
+			}
+		} else {
+			if(g->gameboard[target] == 2 || g->gameboard[target] == 4) { //target is occupied by opponent stone
+           			target += dir;
+
+           			if(target < 0 || target > 63) return -1;
+           			if(g->gameboard[target] == 0) return target;
+			}
+
+		}
+        }
+
+        return -1;	
+}
+
 /**
 	Validates move in game @g
 */
+/*
+int validate_move_in_direction(game* g, int on_top, int from, int to, int vect, int dir, int subseq) {
+	int target;
+
+	//check if player is truly moving their stone
+	if(subseq == 1) {
+		if(on_top) {
+			if(g->gameboard[from] != 2 || g->gameboard[from] != 4) return 1;
+		} else {
+			if(g->gameboard[from] != 1 || g->gameboard[from] != 3) return 1;
+		}
+	}
+
+	while(from != to) {
+		target = validate_direction_step(from, dir, g, on_top);
+
+		if(target < 0) return 1;
+		
+		from += dir;
+	}
+
+	return 0;
+}
+*/
+
 int validate_move_direction(game* g, int on_top, int from, int to, int subseq) {
 	int vector = to - from;
 
@@ -167,6 +236,31 @@ int validate_move_direction(game* g, int on_top, int from, int to, int subseq) {
 /**
 	Validates turn
 */
+/*
+int validate_move(int from, int to, player*p , game* g, int subsequent) {
+	int dir = get_dir_from_points(from, to);
+	int vect = to - from;
+
+	if(!dir) return 1;
+
+	if(from < 0 || to < 0 || to  > 63 || from > 63) return 1;
+
+	//stone is kign
+	if(g->gameboard[from] == 4 || g->gameboard[from] == 3) {
+		validate_move_in_direction(g, p->on_top, from, to, vect, dir, subsequent);
+	} else {//stone is man
+		if(vect < -18 || vect > 18) return 1;//normal stone can't move more than 18
+
+		//subsequent move can be only done when taking opponent stone (|vect| > 9)
+		if(subsequent != 1) if(vect > 9 || vect < -9) return 1;
+
+		validate_move_in_direction(g, p->on_top, from, to, vect, dir, subsequent);
+	}
+
+	return 0;
+}
+*/
+
 int validate_move(int from, int to, player*p , game* g, int subsequent) {
 	//check for index out of bounds (gameboard has 64 fields)
 	if(to > 63 || to < 0 || from > 63 || from < 0) {
@@ -203,108 +297,6 @@ int validate_move(int from, int to, player*p , game* g, int subsequent) {
 	return 0;
 }
 
-/*
-int validate_move(int from, int to, player* p, game* g) {
-	int directionLeft;
-	int directionRight;
-
-	//board has 64 field, check of index out of bounds
-	if(to > 63 || to < 0 || from > 63 || from < 0) {
-		return 1;
-	}
-
-	if(p->onTop) {
-		//inverze indexes for player on top
-		from = 63 - from;
-		to = 63 - to;
-	}	
-
-	//the piece moving isn't king
-	if(g->gameboard[from] != 4 || g->gameboard[from] != 3) {
-		//piece from top can only move downwards (index increases)
-		//likewise piece from bot only moves upwards (index decreses)
-		if(p->onTop) {
-			if(to < from) return 1;
-		} else {
-			if(to > from) return 1;
-		}
-
-		if(p->onTop) {
-			directionLeft = +7;
-			directionRight = +9;
-		} else {
-			directionLeft = -7;
-			directionRight = -9;
-		}
-	
-	
-		* this is basically done in the first condition 
-		//check if the piece moves in correct direction and correct amount of fields
-		if((to - from) != directionLeft && (to - from) != directionRight &&
-		   (to - from) != (2 * directionLeft) && (to - from) != (2 * directionRight)) {
-			return 1;
-		}
-		*
-
-
-		//if target location isn't empty
-		if(g->gameboard[to] != 0) return 1;
-
-		//if jumping over stone
-		if((to - from) == (2 * directionLeft))  {
-			//player on top has pieces 2, 4
-			if(p->onTop) {
-				//check if jumping over enemy stone (1,3)
-				if((g->gameboard[from + directionLeft] % 2) != 1) {
-					return 1;
-				}
-			} else { //player on bot 1, 3
-				//check if jumping over enemy stone (2, 4)
-				if((g->gameboard[from + directionLeft] % 2) != 0) {
-					return 1;
-				}
-
-			}
-		} else if((to - from) == (2 * directionRight)) {
-			//player on top has pieces 2, 4
-			if(p->onTop) {
-				//check if jumping over enemy stone (1,3)
-				if((g->gameboard[from + directionRight] % 2) != 1) {
-					return 1;
-				}
-			} else { //player on bot 1, 3
-				//check if jumping over enemy stone (2, 4)
-				if((g->gameboard[from + directionRight] % 2) != 0) {
-					return 1;
-				}
-
-			}
-
-		}
-	} else { //piece is king, can move in all directions
-
-		//if jumping over stone
-		if((to - from) == (2 * directionLeft) || (to - from) == (2 * directionRight))  {
-			//player on top has pieces 2, 4
-			if(p->onTop) {
-				//check if jumping over enemy stone (1,3)
-				if((g->gameboard[from + directionLeft] % 2) != 1) {
-					return 1;
-				}
-			} else { //player on bot 1, 3
-				//check if jumping over enemy stone (2, 4)
-				if((g->gameboard[from + directionLeft] % 2) != 0) {
-					return 1;
-				}
-
-			}
-		}	
-	}
-	
-
-	return 0;
-}
-*/
 
 /**
 	Prints game @g in 8x8 (for debugging)
@@ -320,6 +312,21 @@ void print_gameboard(game* g) {
 
 /**
 	Makes move in gameboard of game @g, @from to @to
+*/
+/*
+void make_move(int from, int to, player* p, game* g) {
+	int dir = get_dir_from_points(from, to);
+
+	if(!dir) printf("Yikes dir shouldn't be 0 when making move\n");
+
+	g->gameboard[to] = g->gameboard[from];
+
+	while(from != to) {
+		g->gameboard[from] = 0;
+		from += dir;
+	}
+
+}
 */
 void make_move(int from, int to, player* p, game* g) {
 	if(p->on_top) {
@@ -349,7 +356,6 @@ void make_move(int from, int to, player* p, game* g) {
 		g->gameboard[from] = 0;
 	}
 }
-
 
 
 player* check_for_victory(game* g) {
@@ -427,6 +433,26 @@ int delete_game_from_list(l_link **head, game* g) {
         free(curr);        
         
         return 0;          
+}
+
+
+/**
+	Makes gameboard string to be sent with reconnect
+*/
+char* gameboard_to_string(game* g) {
+	int i = 0, count = 0;
+	char* str = calloc(33, sizeof(char));
+
+	if(!str) return NULL;
+
+	for(i = 0; i < 64; i++) {
+		if(g->gameboard[i] >= 0) {
+			sprintf(str + count * sizeof(char), "%d", g->gameboard[i]);
+			count++;
+		}
+	}
+
+	return str;
 }
 
 

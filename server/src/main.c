@@ -28,7 +28,7 @@ void print_help() {
 */
 int process_argument(char* sw, char* val) {
 	if(val[0] == '-') {
-		printf("Value start with - implying it's a switch!\n");
+		printf("Value starting with - implying it's a switch!\n");
 		return 1;
 	}
 
@@ -36,8 +36,19 @@ int process_argument(char* sw, char* val) {
 		ip = val;
 	} else if(!strcmp(sw, "-p")) {
 		port = strtol(val, NULL, 10);
+
+		if(port < 0 || port > 65536) {
+			printf("Port is expected to be a number from 0 to 65536\n");
+			return 1;
+		}
 	} else if(!strcmp(sw, "-c")) {
 		max_con = strtol(val, NULL, 10);
+			
+		if(max_con < 2 || max_con > 100) {
+			printf("Server allows between 2 and 100 connectinos\n");
+			return 1;
+		}
+
 	} else {
 		printf("Unknown option!\n");
 	}
