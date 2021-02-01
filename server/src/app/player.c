@@ -1,4 +1,5 @@
 #include "player.h"
+#include "automaton.h"
 
 
 /**
@@ -108,10 +109,11 @@ player* init_player(int fd) {
         new->socket = fd;
         new->id = 0;
         new->strikes = 0;
-	new->busy = 0;
+	//new->busy = 0;
 	new->on_top = 0;
         new->username = NULL;
 	new->last_com = time(NULL);
+	new->at.state = C_CONNECTED;
         
         return new;	
 }

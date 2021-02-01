@@ -143,10 +143,13 @@ char* do_win(player* winner, game* g, player* p) {
 		player* opponent = get_your_opponent(g, p);
 		int rv = 0;
 
-		g->p1->busy = 0;
+		make_transition(&(g->p1->at), A_END_GAME);
+		make_transition(&(g->p2->at), A_END_GAME);
+
+		//g->p1->busy = 0;
 		g->p1->on_top = 0;
 
-		g->p2->busy = 0;
+		//g->p2->busy = 0;
 		g->p2->on_top = 0;
 
 		if(winner == opponent) {
@@ -390,9 +393,6 @@ char* connect_my(int* player_id, char* username, int fd) {
 	player *p = NULL;
 	game *g = NULL;
 
-
-	
-
 	if(!username) {
 		return construct_message(*player_id, 402, "Username is empty");
 	}
@@ -406,6 +406,13 @@ char* connect_my(int* player_id, char* username, int fd) {
 	}
 
 	if(*player_id == 0) { //new player
+		p = find_player_by_fd(p_list, fd); //!!!!!!!! if using nc to test (and sets disconnect to long
+		// time) -> this will be in list, however with normal disconnect time, the socket will be freed
+		if(p) { //socket already in the list
+			return construct_message(*player_id, 408, "This socket is already connected");
+		}
+
+
 		if(player_count >= max_con) {
 			return construct_message(*player_id, 408, "Maximum number of connection reached");
 		}
@@ -517,7 +524,7 @@ char* connect_my(int* player_id, char* username, int fd) {
 			//p->strikes = 0;
 
 			return msg;
-		} else {
+		} else { //could branch connected and id mismatch for more detailed response
 			printf("Player is either already connected or IDs don't match\n");
 			return construct_message(*player_id, 407, "Is this an attack attempt");
 		}
@@ -531,6 +538,10 @@ char* connect_my(int* player_id, char* username, int fd) {
 char* lobby(player* p) {
 	char* msg = NULL;
 	l_link* temp = g_lobby;
+
+	if(p->at.state != C_CONNECTED) {
+		return construct_message(p->id, 403, "This cannot be done in current state");
+	}
 
 	msg = construct_message(p->id, 201, "Available lobbies");
 
@@ -563,6 +574,12 @@ char* create_lobby(player* p, char* lobby_name) {
 	if(strlen(lobby_name) > 63) {
 		return construct_message(p->id, 403, "Lobby name is too long");
 	}
+
+	//TODO lobby name duplicates
+
+	if(p->at.state != C_CONNECTED) {
+		return construct_message(p->id, 403, "This cannot be done in current state");
+	}
 	
 	if(add_player_to_game(g, p)) { //theorethically shouldn't happen...
 		return construct_message(p->id, 404, "Failed to add player to game");
@@ -572,9 +589,12 @@ char* create_lobby(player* p, char* lobby_name) {
 		return construct_message(p->id, 405, "Failed to add game");
 	}
 
-	p->busy = 1;
+	//p->busy = 1;
 
 	strcpy(g->gamename, lobby_name);
+
+	//set state to "IN LOBBY"
+	make_transition(&(p->at), A_CREATE_L);
 	
 	return construct_message(p->id, 201, "Successfully created lobby");
 }
@@ -587,6 +607,10 @@ char* create_lobby(player* p, char* lobby_name) {
 char* delete_lobby(player* p) {
 	game *g = NULL;
 	//l_link *prev = NULL, *curr = NULL;
+
+	if(p->at.state != C_IN_LOBBY) {
+		return construct_message(p->id, 403, "This cannot be done in current state");
+	}
 
 	g = find_game_by_player(g_lobby, p);
 
@@ -626,7 +650,9 @@ char* delete_lobby(player* p) {
 		return construct_message(p->id, 403, "No game found");
 	}
 
-	p->busy = 0;
+	make_transition(&(p->at), A_LEAVE_L);
+
+	//p->busy = 0;
 
 	return construct_message(p->id, 201, "Lobby deleted");
 }
@@ -645,6 +671,10 @@ char* join_game(player* p, char* lobby_name) {
 		return construct_message(p->id, 402, "Lobby name is too long");
 	}
 
+	if(p->at.state != C_CONNECTED) {
+		return construct_message(p->id, 403, "This cannot be done in current state");
+	}
+
 	g = extract_game_by_name(&g_lobby, lobby_name);
 
 	if(!g) {
@@ -654,7 +684,7 @@ char* join_game(player* p, char* lobby_name) {
 	if(add_lifo(&g_playing, g)) { //server failed to add game to g_playing
 		if(add_lifo(&g_lobby, g)) { //return game back to lobby
 			//server failed to return game to lobby, cancel lobby for p1
-			g->p1->busy = 0;
+			//g->p1->busy = 0;
 
 			//contact lobby creator
 			op_msg = construct_message_with_inst(g->p1->id, inst_string[OPPONENT_JOIN], 401,
@@ -686,17 +716,17 @@ char* join_game(player* p, char* lobby_name) {
 		return construct_message(p->id, 404, "Failed to contact opponent");
 	}
 
-	p->busy = 1;
+	msg = construct_message(p->id, 201, "Successfully joined game");
+	if(!msg) return NULL;
+	append_parameter(&msg, g->p1->username);
+
+	//p->busy = 1;
 	p->on_top = 1;
 
 	g->p2 = p;
 	g->on_turn = g->p1;
 
-	msg = construct_message(p->id, 201, "Successfully joined game");
-
-	if(!msg) return NULL;
-
-	append_parameter(&msg, g->p1->username);
+	make_transition(&(p->at), A_JOIN_L);
 
 	return msg;
 }
@@ -715,6 +745,10 @@ char* turn(player* p, char* parts[32], int parts_count) {
 	char *op_msg = NULL;
 	int i = 0, rv = 0;
 	int pars[parts_count]; //2 parts are ID and INST
+
+	if(p->at.state != C_IN_GAME) {
+		return construct_message(p->id, 403, "This cannot be done in current state");
+	}
 
 	g = find_game_by_player(g_playing, p);
 
@@ -939,7 +973,8 @@ void check_for_disconnects(fd_set* clients) {
 			printf("Player %d lost connection\n", p->id);
 
 			p->connected = 0;
-			if(p->busy) {
+			//if(p->busy) {
+			if(p->at.state != C_CONNECTED) {
 				g = find_game_by_player(g_lobby, p);
 
 				if(!g) {

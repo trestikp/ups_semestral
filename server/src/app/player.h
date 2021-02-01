@@ -2,6 +2,7 @@
 #define _PLAYER_H
 
 #include "../general_functions.h"
+#include "automaton.h"
 
 #include <string.h>
 #include <time.h>
@@ -16,9 +17,10 @@ typedef struct {
 	int strikes;
 	int connected;
 	time_t last_com;
-	int busy;
+	//int busy;
 	int on_top;
 	char *username;
+	automaton at;
 } player;
 
 /**
