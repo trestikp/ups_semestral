@@ -162,13 +162,10 @@ int run_server(char* ip, int port) {
 
 		tests = clients;
 		errno = 0;
-		//TODO server socket cannot accept connections until timeout
 		rv = select(FD_SETSIZE, &tests, NULL, NULL, timeout);
 		//rv = select(FD_SETSIZE, &tests, NULL, NULL, NULL);
 
 		if(rv < 0) {
-			//printf("EINVAL = %d , ENOMEM = %d, EBADF = %d\n", EINVAL, ENOMEM, EBADF); //TODO
-
 			if(errno == EINTR) {
 				printf("FD_SET interrupt error. Closing server.\n");
 				return 2;
@@ -190,7 +187,6 @@ int run_server(char* ip, int port) {
 						printf("New connection. Client not CONNECTED. FD %d\n", rv);
 					}
 				} else {
-					//printf("Client sending data.\n");
 					ioctl(i, FIONREAD, &data_size);
 
 					if(data_size > 0 && data_size < BUFFER_SIZE) {
@@ -228,7 +224,6 @@ int run_server(char* ip, int port) {
 						
 						//printf("Input handling took: %ldms\n", (end.tv_usec - start.tv_usec));
 					} else {
-						//TODO check if client was in-game -> wait for reconnect/ remove game
 						printf("Server closing FD %d\n", i);
 						close(i);
 						FD_CLR(i, &clients);

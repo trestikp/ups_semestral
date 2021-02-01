@@ -52,6 +52,7 @@ public class ReconnectionRepeatCtrl extends OverlordCtrl implements CtrlNecessit
 
     public void cancel(ActionEvent actionEvent) {
         client.resetConnectionInfo();
+        client.deleteConnectionFile();
         genericSetScene("main_menu_disconnected.fxml");
     }
 

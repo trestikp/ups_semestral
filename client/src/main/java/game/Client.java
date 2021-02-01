@@ -1388,7 +1388,7 @@ public class Client implements Runnable {
         return true;
     }
 
-    private void deleteConnectionFile() {
+    public void deleteConnectionFile() {
         File f = new File("./.last_connection");
 
         if(f.exists()) {

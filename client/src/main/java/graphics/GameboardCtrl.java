@@ -135,7 +135,7 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
                         int paneID = Integer.parseInt(((ImageView) event.getSource()).getParent().getId());
                         imageViewEvent(paneID);
 
-                        System.out.println("You clicked " + paneID);
+//                        System.out.println("You clicked " + paneID);
                     });
 
                     p.getChildren().add(ps);
@@ -240,7 +240,7 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
                 highlightedPanes.add(i);
             }
         } else {
-            System.out.println("HIGHLIGHT LIST IS NULL");
+//            System.out.println("HIGHLIGHT LIST IS NULL");
         }
 //        if(!hl.isEmpty()) {
 //            for(int i : hl) {
@@ -297,32 +297,32 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
         //blah
 
         if(client.getGame().canMoveAgain(source, clicked) && !highlightedPanes.isEmpty()) {
-            System.out.println("more moves to make");
+//            System.out.println("more moves to make");
 
             try {
                 getPaneWithID(clicked).getChildren().get(0).setOnMouseClicked(null);
             } catch (IndexOutOfBoundsException e) {
-                System.err.println("Welp continuous");
+                System.err.println("Failed to remove mouse on click");
             }
 
             highlightProximity(clicked);
 
         } else {
-            System.out.println("Out of moves. Sending to server");
+//            System.out.println("Out of moves. Sending to server");
 
             unHighlightMoves(); //if user chooses not to move in a sequence, possible sequence stays highlighted
 
             try {
                 getPaneWithID(clicked).getChildren().get(0).setOnMouseClicked(null);
             } catch (IndexOutOfBoundsException e) {
-                System.err.println("Welp");
+                System.err.println("Failed to remove mouse on click");
             }
 
-            System.out.print("Sequence");
-            for(int i : moveSequence) {
-                System.out.print(i + "  ");
-            }
-            System.out.println();
+//            System.out.print("Sequence");
+//            for(int i : moveSequence) {
+//                System.out.print(i + "  ");
+//            }
+//            System.out.println();
 
             client.setInstruction(Instruction.TURN);
             for(int i : moveSequence) {
@@ -503,10 +503,10 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
 
         getPaneWithID(moveSequence.getLast()).getChildren().add(n);
 
-        System.err.println("Target location: " + moveSequence.getLast());
+//        System.err.println("Target location: " + moveSequence.getLast());
 
         if(moveSequence.getLast() < 8) {
-            System.err.println("Upgrading piece");
+//            System.err.println("Upgrading piece");
             upgradePiece(moveSequence.getLast());
         }
 

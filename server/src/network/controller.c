@@ -191,46 +191,6 @@ char* do_win(player* winner, game* g, player* p) {
 
 			return construct_message(p->id, 203, "You won!");
 		}
-
-		/*
-		if(winner == p) {
-			if(p == g->p1) {
-				op_msg = construct_message_with_inst(g->p2->id,
-					inst_string[OPPONENT_TURN], 204, "You lost!");
-
-				send(g->p2->socket, op_msg, sizeof(op_msg), MSG_CONFIRM);
-				//rv = contact_player(g->p2->socket, winner->id, g->p2->id, op_msg);
-			} else {
-				op_msg = construct_message_with_inst(g->p1->id,
-					inst_string[OPPONENT_TURN], 204, "You lost!");
-
-				send(g->p1->socket, op_msg, sizeof(op_msg), MSG_CONFIRM);
-				//rv = contact_player(g->p1->socket, winner->id, g->p1->id, op_msg);
-			}
-
-			delete_game_from_list(&g_playing, g);
-
-			return construct_message(winner->id, 203, "You won!");
-		} else {
-			if(p == g->p1) {
-				op_msg = construct_message_with_inst(g->p2->id,
-					inst_string[OPPONENT_TURN], 203, "You won!");
-
-				send(g->p2->socket, op_msg, sizeof(op_msg), MSG_CONFIRM);
-				//rv = contact_player(g->p2->socket, winner->id, g->p2->id, op_msg);
-			} else {
-				op_msg = construct_message_with_inst(g->p1->id,
-					inst_string[OPPONENT_TURN], 203, "You won!");
-
-				send(g->p1->socket, op_msg, sizeof(op_msg), MSG_CONFIRM);
-				//rv = contact_player(g->p1->socket, winner->id, g->p1->id, op_msg);
-			}
-
-			delete_game_from_list(&g_playing, g);
-
-			return construct_message(winner->id, 204, "You lost!");
-		}
-		*/
 }
 
 
@@ -409,12 +369,12 @@ char* connect_my(int* player_id, char* username, int fd) {
 		p = find_player_by_fd(p_list, fd); //!!!!!!!! if using nc to test (and sets disconnect to long
 		// time) -> this will be in list, however with normal disconnect time, the socket will be freed
 		if(p) { //socket already in the list
-			return construct_message(*player_id, 408, "This socket is already connected");
+			return construct_message(*player_id, 410, "This socket is already connected");
 		}
 
 
 		if(player_count >= max_con) {
-			return construct_message(*player_id, 408, "Maximum number of connection reached");
+			return construct_message(*player_id, 409, "Maximum number of connections reached");
 		}
 
 		p = add_player(fd);
@@ -490,7 +450,7 @@ char* connect_my(int* player_id, char* username, int fd) {
 					append_parameter(&msg, "turn");
 
 					char* board = gameboard_to_string(g);
-					if(!board) return construct_message(p->id, 408, "Failed to attach gameboad");
+					if(!board) return construct_message(p->id, 408, "Failed to attach gameboard");
 
 					append_parameter(&msg, board);
 					free(board);
@@ -504,7 +464,7 @@ char* connect_my(int* player_id, char* username, int fd) {
 					append_parameter(&msg, "opponents_turn");
 
 					char* board = gameboard_to_string(g);
-					if(!board) return construct_message(p->id, 408, "Failed to attach gameboad");
+					if(!board) return construct_message(p->id, 408, "Failed to attach gameboard");
 
 					append_parameter(&msg, board);
 					free(board);
@@ -564,6 +524,7 @@ char* lobby(player* p) {
 	Returns message that is sent to player @p
 */
 char* create_lobby(player* p, char* lobby_name) {
+	l_link* temp = g_lobby;
 	game* g = NULL;
 
 	g = init_new_game();
@@ -575,18 +536,24 @@ char* create_lobby(player* p, char* lobby_name) {
 		return construct_message(p->id, 403, "Lobby name is too long");
 	}
 
-	//TODO lobby name duplicates
+	while(temp) {
+		if(!strcmp(((game*) temp->data)->gamename, lobby_name)) {
+			return construct_message(p->id, 404, "Lobby name already exists");
+		}
+
+		temp = temp->next;
+	}
 
 	if(p->at.state != C_CONNECTED) {
-		return construct_message(p->id, 403, "This cannot be done in current state");
+		return construct_message(p->id, 405, "This cannot be done in current state");
 	}
 	
 	if(add_player_to_game(g, p)) { //theorethically shouldn't happen...
-		return construct_message(p->id, 404, "Failed to add player to game");
+		return construct_message(p->id, 406, "Failed to add player to game");
 	}
 
 	if(add_lifo(&g_lobby, g)) {
-		return construct_message(p->id, 405, "Failed to add game");
+		return construct_message(p->id, 407, "Failed to add game");
 	}
 
 	//p->busy = 1;
@@ -609,45 +576,16 @@ char* delete_lobby(player* p) {
 	//l_link *prev = NULL, *curr = NULL;
 
 	if(p->at.state != C_IN_LOBBY) {
-		return construct_message(p->id, 403, "This cannot be done in current state");
+		return construct_message(p->id, 402, "This cannot be done in current state");
 	}
 
 	g = find_game_by_player(g_lobby, p);
 
-	if(!g) return construct_message(p->id, 402, "You don't have lobby");
-
-	/*
-	curr = g_lobby;
-
-	while(curr) {
-		if(((game*) curr->data)->p1 == p) {
-			break;
-		}
-
-		prev = curr;
-		curr = curr->next;
-	}
-
-	if(!curr) {
-		return construct_message(p->id, 402, "No game found for this player");
-	}
-
-	free(curr->data);
-
-	if(prev) {
-		prev->next = curr->next;
-	} else {
-		//if prev = NULL, its the beginning of the lobby
-		// -> need to change 
-		g_lobby = g_lobby->next;
-	}
-
-	free(curr);
-	*/
+	if(!g) return construct_message(p->id, 403, "You don't have lobby");
 
 	//theorethically doesn't need to be checked because find_game_by_player makes sure the game exists
 	if(delete_game_from_list(&g_lobby, g)) {
-		return construct_message(p->id, 403, "No game found");
+		return construct_message(p->id, 404, "No game found");
 	}
 
 	make_transition(&(p->at), A_LEAVE_L);
@@ -678,7 +616,7 @@ char* join_game(player* p, char* lobby_name) {
 	g = extract_game_by_name(&g_lobby, lobby_name);
 
 	if(!g) {
-		return construct_message(p->id, 403, "Failed to find game lobby");
+		return construct_message(p->id, 404, "Failed to find game lobby");
 	}
 
 	if(add_lifo(&g_playing, g)) { //server failed to add game to g_playing
@@ -690,7 +628,7 @@ char* join_game(player* p, char* lobby_name) {
 			op_msg = construct_message_with_inst(g->p1->id, inst_string[OPPONENT_JOIN], 401,
 						   "Server lost your lobby");
 
-			if(!op_msg) return construct_message(p->id, 404, "Failed to contact opponent");
+			if(!op_msg) return construct_message(p->id, 405, "Failed to contact opponent");
 
 			rv = send(g->p1->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
 			
@@ -698,23 +636,24 @@ char* join_game(player* p, char* lobby_name) {
 				printf("Server lost lobby and failed to contact player about it\n");
 			}
 
-			return construct_message(p->id, 405, "Server lost game");
+			return construct_message(p->id, 406, "Server lost game");
 		}
-		return construct_message(p->id, 404, "Failed to add game");
+		return construct_message(p->id, 407, "Failed to add game");
 	}
 
 	//contact opponent
 	op_msg = construct_message_with_inst(g->p1->id, inst_string[OPPONENT_JOIN], 201,
 						   "Opponent connected. Starting");
 
-	if(!op_msg) return construct_message(p->id, 404, "Failed to contact opponent");
+	if(!op_msg) return construct_message(p->id, 405, "Failed to contact opponent");
 
 	append_parameter(&op_msg, p->username);
 	rv = send(g->p1->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
 
 	if(rv < 0) {
-		return construct_message(p->id, 404, "Failed to contact opponent");
+		return construct_message(p->id, 405, "Failed to contact opponent");
 	}
+
 
 	msg = construct_message(p->id, 201, "Successfully joined game");
 	if(!msg) return NULL;
@@ -726,6 +665,7 @@ char* join_game(player* p, char* lobby_name) {
 	g->p2 = p;
 	g->on_turn = g->p1;
 
+	make_transition(&(g->p1->at), A_JOIN_L);
 	make_transition(&(p->at), A_JOIN_L);
 
 	return msg;
@@ -747,31 +687,31 @@ char* turn(player* p, char* parts[32], int parts_count) {
 	int pars[parts_count]; //2 parts are ID and INST
 
 	if(p->at.state != C_IN_GAME) {
-		return construct_message(p->id, 403, "This cannot be done in current state");
+		return construct_message(p->id, 402, "This cannot be done in current state");
 	}
 
 	g = find_game_by_player(g_playing, p);
 
 	if(!g) {
-		return construct_message(p->id, 402, "Failed to find game");
+		return construct_message(p->id, 403, "Failed to find game");
 	}
 
 	if(g->on_turn != p) {
-		return construct_message(p->id, 499, "It is not your turn"); //TODO code
+		return construct_message(p->id, 404, "It is not your turn"); //TODO code
 	}
 
 	if(parts[2] == NULL) { //this if is kinda useless
-		return construct_message(p->id, 403, "Need starting position");
+		return construct_message(p->id, 405, "Need starting position");
 	}
 
 	if(parts_count < 2) { 
-		return construct_message(p->id, 404, "Too few parameters");
+		return construct_message(p->id, 406, "Too few parameters");
 	}
 
 	for(i = 0; i < parts_count; i++) {
 		pars[i] = parse_string_to_int(parts[i + 2]);
 		if(pars[i] == INT_MIN) {
-			return construct_message(p->id, 406, "Parameter isn't number");
+			return construct_message(p->id, 407, "Parameter isn't number");
 
 		}
 	}
@@ -785,7 +725,7 @@ char* turn(player* p, char* parts[32], int parts_count) {
 
 			print_gameboard(g);
 			//validate_move(pars[i - 1], pars[i], p, g);
-			return construct_message(p->id, 404, "Failed to validate move");
+			return construct_message(p->id, 408, "Failed to validate move");
 		}
 	}
 
@@ -795,14 +735,14 @@ char* turn(player* p, char* parts[32], int parts_count) {
 
 	op_msg = construct_message_with_inst(opponent->id, inst_string[OPPONENT_TURN], 201, "Opponent moved");
 
-	if(!op_msg) return construct_message(p->id, 407, "Failed to contact opponent");
+	if(!op_msg) return construct_message(p->id, 410, "Failed to contact opponent");
 
 	for(i = 0; i < parts_count; i++) {
 		char num[3]; //shouldn't need more than 2 numbers as indexes should be between 0-63
 		sprintf(num, "%d", pars[i]);
 
 		if(append_parameter(&op_msg, num)) {
-			return construct_message(p->id, 408, "Opponent message error");
+			return construct_message(p->id, 411, "Opponent message error");
 		}
 	}
 
@@ -817,58 +757,13 @@ char* turn(player* p, char* parts[32], int parts_count) {
 		return do_win(winner, g, p);
 	} else {
 		rv = send(opponent->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
-		if(rv < 0) return construct_message(p->id, 407, "Failed to contact opponent");
+		if(rv < 0) return construct_message(p->id, 410, "Failed to contact opponent");
 	}
 
 
 	print_gameboard(g);
 
-
-	/*
-	if(g->p1 == p) {
-		char* op_msg = construct_message_with_inst(g->p2->id, inst_string[OPPONENT_TURN], 201, "Opponent moved");
-		
-		for(i = 0; i < parts_count; i++) {
-			char num[3]; //shouldn't need more than 2 numbers as indexes should be between 0-63
-			sprintf(num, "%d", pars[i]);
-
-			append_parameter(&op_msg, num);
-		}
-		printf("Contanting opponent\n");
-
-		send(g->p2->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
-
-		//rv = contact_player(g->p2->socket, p->id, g->p2->id, op_msg);
-		//rv = 0;
-	} else if(g->p2 == p) {
-		char* op_msg = construct_message_with_inst(g->p1->id, inst_string[OPPONENT_TURN], 201, "Opponent moved");
-
-		for(i = 0; i < parts_count; i++) {
-			char num[3]; //shouldn't need more than 2 numbers as indexes should be between 0-63
-			sprintf(num, "%d", pars[i]);
-
-			append_parameter(&op_msg, num);
-		}
-
-		printf("Contanting opponent\n");
-
-		send(g->p1->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
-
-		//rv =contact_player(g->p1->socket, p->id, g->p1->id, op_msg);
-		//rv = 0;
-	} else {
-		return construct_message(p->id, 405, "This is not your game");
-	}
-	*/
-
 	return construct_message(p->id, 202, "Turn successful");
-	/*
-	if(rv == 3 || rv == 0) {
-		return construct_message(p->id, 202, "Turn successful");
-	} else {
-		return construct_message(p->id, 407, "Failed to contact opponent");
-	}
-	*/
 }
 
 
@@ -886,37 +781,6 @@ char* ping(player* p) {
 	Returns message that is sent to player @p
 */
 char* disconnect(player* p) {
-	/*
-	l_link *prev = NULL, *curr = NULL;
-	int found = 1;
-
-	curr = p_list;
-
-	while(curr) {
-		if(((player*) curr->data) == p) {
-			found = 0;
-			break;
-		}
-
-		prev = curr;
-		curr = curr->next;
-	}
-
-	if(found) {
-		return construct_message(0, 402, "Player not found");
-	}
-
-	if(prev) {
-		prev->next = curr->next;
-	} else {
-		p_list = p_list->next;
-	}
-
-
-	free_player(curr->data);
-	free(curr);
-	*/
-
 	if(delete_player_with_id(&p_list, p->id)) {
 		log_message("Failed to find player to delete but closed connection", LVL_ERROR);
 		printf("ERROR: Failed to find player to delete but closing connection\n");
@@ -1012,38 +876,6 @@ void check_for_disconnects(fd_set* clients) {
 						printf("Failed to find opponent while reconnecting\n");
 					}
 
-					/*
-					if(g->p1 == p) {
-						if(g->p2->socket < 0) {
-							printf("Opponent doesn't have socket. Disconnected\n");
-						} else {
-							op_msg = construct_message_with_inst(g->p2->id,
-								inst_string[OPPONENT_DISC], 201, "Opponent disconnected\n");
-							rv = send(g->p2->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
-
-							if(rv < 0) printf("Failed to contact opponent about disconnect\n");
-
-							free(op_msg);
-						}
-					} else {
-						if(g->p1->socket < 0) {
-							printf("Opponent doesn't have socket. Disconnected\n");
-						} else {
-							op_msg = construct_message_with_inst(g->p1->id,
-								inst_string[OPPONENT_DISC], 201, "Opponent disconnected\n");
-							rv = send(g->p1->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
-
-							if(rv < 0) printf("Failed to contact opponent about disconnect\n");
-
-							free(op_msg);
-						}
-					}
-					*/
-
-				//printf(">>> OP_RESP: %s\n", op_msg);
-				//printf(">>> SEND_RV: %d\n", rv);
-
-				//	free(op_msg);
 				}
 			}
 
@@ -1180,7 +1012,8 @@ char* handle_message(char *message, int fd) {
 	//printf("\n==============================\n");
 
 	if(inst != PING) printf(">>> BUFFER: %s\n", debug_copy);
-	if(reply && inst != PING) printf(">>> RESPONSE: %s with len %ld to socket %d\n\n", reply, strlen(reply), fd);
+	//if(reply && inst != PING) printf(">>> RESPONSE: %s with len %ld to socket %d\n\n", reply, strlen(reply), fd);
+	if(reply && inst != PING) printf(">>> RESPONSE: %s\n", reply);
 
 	if(reply) return reply;
 	else 	  return construct_message(parsed_id, 400, "Failed to construct reply");
