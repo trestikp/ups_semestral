@@ -45,11 +45,10 @@ char* inst_string[INSTRUCTION_COUNT] = {
 
 /*****************************************************************************/
 /*									     */
-/*	Temporary functions -- are to be removed			     */
+/*	Temporary functions -- for printing while debugging		     */
 /*									     */
 /*****************************************************************************/
 
-//TODO: remove
 void print_plist() {
 	l_link *temp = p_list;
 	while(temp) {
@@ -138,7 +137,7 @@ game* find_players_game(player* p) {
 }
 
 
-char* do_win(player* winner, game* g, player* p) {
+char* do_win(player* loser, game* g, player* p) {
 		char* op_msg;
 		player* opponent = get_your_opponent(g, p);
 		int rv = 0;
@@ -152,9 +151,9 @@ char* do_win(player* winner, game* g, player* p) {
 		//g->p2->busy = 0;
 		g->p2->on_top = 0;
 
-		if(winner == opponent) {
+		if(loser == opponent) {
 			op_msg = construct_message_with_inst(opponent->id, inst_string[OPPONENT_TURN],
-							203, "You won!");
+							203, "You lost!");
 
 			if(!op_msg) return construct_message(p->id, 499, "Failed to contact opponent");
 
@@ -165,15 +164,12 @@ char* do_win(player* winner, game* g, player* p) {
 				log_message("Failed to delete game, continuing (possible memory leak)", LVL_ERROR);
 			}
 
-	
-	printf("Sending %s to player %d\n", op_msg, opponent->id);
-
 			free(op_msg);
 
-			return construct_message(p->id, 204, "You lost!");
+			return construct_message(p->id, 204, "You won!");
 		} else {
 			op_msg = construct_message_with_inst(opponent->id, inst_string[OPPONENT_TURN],
-							204, "You lost!");
+							204, "You won!");
 
 			if(!op_msg) return construct_message(p->id, 499, "Failed to contact opponent");
 
@@ -184,12 +180,9 @@ char* do_win(player* winner, game* g, player* p) {
 				log_message("Failed to delete game, continuing (possible memory leak)", LVL_ERROR);
 			}
 
-
-	printf("Sending %s to player %d\n", op_msg, opponent->id);
-
 			free(op_msg);
 
-			return construct_message(p->id, 203, "You won!");
+			return construct_message(p->id, 203, "You lost!");
 		}
 }
 
@@ -251,6 +244,7 @@ instruction parse_instruction(char* str) {
 
 /**
 	Parses string @str to int and return number extraced or INT_MIN on error.
+	This could (should) be moved to general functions
 */
 int parse_string_to_int(char* str) {
 	int res;
@@ -680,7 +674,7 @@ char* join_game(player* p, char* lobby_name) {
 	Returns message that is sent to player @p
 */
 char* turn(player* p, char* parts[32], int parts_count) {
-	player* winner = NULL, *opponent = NULL;
+	player* loser = NULL, *opponent = NULL;
 	game* g = NULL;
 	char *op_msg = NULL;
 	int i = 0, rv = 0;
@@ -720,11 +714,6 @@ char* turn(player* p, char* parts[32], int parts_count) {
 		if(validate_move(pars[i - 1], pars[i], p, g, i)) {
 			printf("Failed verify move from %d to %d\n", pars[i - 1], pars[i]);
 
-		//TODO remove this is for debug
-		validate_move(pars[i - 1], pars[i], p, g, i);
-
-			print_gameboard(g);
-			//validate_move(pars[i - 1], pars[i], p, g);
 			return construct_message(p->id, 408, "Failed to validate move");
 		}
 	}
@@ -753,15 +742,12 @@ char* turn(player* p, char* parts[32], int parts_count) {
 
 	g->on_turn = opponent;
 
-	if((winner =  check_for_victory(g))) {
-		return do_win(winner, g, p);
+	if((loser =  check_for_victory(g))) {
+		return do_win(loser, g, p);
 	} else {
 		rv = send(opponent->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
 		if(rv < 0) return construct_message(p->id, 410, "Failed to contact opponent");
 	}
-
-
-	print_gameboard(g);
 
 	return construct_message(p->id, 202, "Turn successful");
 }

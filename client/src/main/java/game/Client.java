@@ -438,7 +438,7 @@ public class Client implements Runnable {
                         ((GameboardCtrl) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
                     });
 
-                    game.printGameBoard();
+//                    game.printGameBoard();
                     auto.makeTransition(Action.TURN);
 //                    sendReply(true);
                 } else {
@@ -471,7 +471,7 @@ public class Client implements Runnable {
 
 //            auto.setGameState(State.LOST_CON);
             status.setResponseText("Opponent lost connection. Waiting..");
-        } else if(msg.getInst() == Instruction.OPPONENT_RECO) {
+        } else if(msg.getInst() == Instruction.OPPONENT_RECO) {                                         //OPPONENT_RECO
             opponentConnected = true;
 
             Platform.runLater(() -> {
@@ -488,26 +488,18 @@ public class Client implements Runnable {
 
                 status.setResponseText("Opponent reconnected");
             });
-        }
-    }
+        } else if(msg.getInst() == Instruction.OPPONENT_LEFT) {                                         //OPPONENT_LEFT
+            opponentConnected = false;
+            opponentName = null;
 
-    /**
-     * Send reply to servers message
-     * @param success whether message was handled successfully
-     */
-    private void sendReply(boolean success) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(clientID);
-        sb.append("|");
-        if(success) {
-            sb.append("OK");
+            Platform.runLater(() -> {
+                currentCtrl.genericSetScene("main_menu_connected.fxml");
+                status.setResponseText(msg.getResponseText());
+            });
         } else {
-            sb.append("ERROR");
+            System.out.println("Unrecognized server message");
+            strikes++;
         }
-        sb.append('\n');
-
-        connection.sendMessageTxt(sb.toString());
     }
 
 /*---------------------------------------------------------------------------------------------------------------------|
@@ -765,41 +757,10 @@ public class Client implements Runnable {
 //                        if(auto.getGameState() == State.OPPONENT_TURN) {
 //                            ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
 //                        }
-                        game.printGameBoard();
+//                        game.printGameBoard();
                     });
-
-//                    if(reply.getParams()[0].equals(State.TURN.getName())) {
-//                    auto.setGameState(State.TURN);
-//
-//                    boolean rv = game.validateGameboard(reply.getParams()[1]);
-//
-//                    Platform.runLater(() -> {
-//                        if(rv) {
-//                            game.updatePlayerStoneIndexes();
-//                            ((GameboardCtrl) currentCtrl).initStones();
-//                            ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
-//                            status.setResponseText("Gameboard didn't match. Using server gameboard");
-//                            game.printGameBoard(); // TODO blah
-//                        }
-//
-//                        ((GameboardCtrl) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
-//                    });
-//                } else if(reply.getParams()[0].equals(State.OPPONENT_TURN.getName())) {
-//                    auto.setGameState(State.OPPONENT_TURN);
-//
-//                    boolean rv = game.validateGameboard(reply.getParams()[1]);
-//
-//                    Platform.runLater(() -> {
-//                        if(rv) {
-//                            game.updatePlayerStoneIndexes();
-//                            ((GameboardCtrl) currentCtrl).initStones();
-//                            ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
-//                            status.setResponseText("Gameboard didn't match. Using server gameboard");
-//                            game.printGameBoard(); //TODO blah
-//                        }
-//                    });
                 } else {
-                    doStrikeOrDisconnect(); //TODO do this or ignore?
+                    doStrikeOrDisconnect(); //do this or ignore?
 
                     System.err.println("Failed to get state from server on reconnection. Returning to menu");
 
@@ -1022,7 +983,7 @@ public class Client implements Runnable {
                         ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
                     });
 
-                    game.printGameBoard();
+//                    game.printGameBoard();
 
                     auto.makeTransition(Action.TURN);
                 } else {
@@ -1042,31 +1003,6 @@ public class Client implements Runnable {
             } else {
                 status.setResponseText("Unknown response code");
             }
-//            else if(reply.getResponseCode() == 203) {
-//                if(getAutomaton().validateTransition(Action.WIN)) {
-//                    Platform.runLater(() -> {
-//                        currentCtrl.genericSetScene("main_menu_connected.fxml");
-//                        status.setResponseText(reply.getResponseText());
-//                    });
-//
-//                    auto.makeTransition(Action.WIN);
-//                } else {
-//                    status.setResponseText("Automaton is in wrong state");
-//                }
-//            } else if(reply.getResponseCode() == 204) {
-//                //there is currently no real difference between "win" and "lose" transitions, but could server for
-//                //stat logging
-//                if(getAutomaton().validateTransition(Action.LOSE)) {
-//                    auto.makeTransition(Action.LOSE);
-//
-//                    Platform.runLater(() -> {
-//                        currentCtrl.genericSetScene("main_menu_connected.fxml");
-//                        status.setResponseText(reply.getResponseText());
-//                    });
-//                } else {
-//                    status.setResponseText("Automaton is in wrong state");
-//                }
-//            }
         } else if (reply.getInst() == Instruction.ERROR) {
             status.setResponseText(reply.getResponseText());
 

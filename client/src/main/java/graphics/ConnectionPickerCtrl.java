@@ -71,19 +71,6 @@ public class ConnectionPickerCtrl extends OverlordCtrl implements CtrlNecessitie
         boolean ipGood, portGood, nameGood;
 
         ipGood = true;
-//        if(ip.matches("^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$")) {
-//            ip_error_label.setVisible(false);
-//
-//            ipGood = true;
-//        } else {
-//            //TODO: matching IPv6 ?, hostname?
-//
-//            ip_error_label.setText("Entered value is not an IPv4 address!");
-//            ip_error_label.setStyle("-fx-text-fill: #FF0000");
-//            ip_error_label.setVisible(true);
-//
-//            ipGood = false;
-//        }
 
         if(ip.length() > 64) {
             ipErrorLbl.setText("Maximum allowed length is 64 characters");

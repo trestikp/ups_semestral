@@ -1,6 +1,5 @@
 package game;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 /**
@@ -101,27 +100,6 @@ public class Game {
         gameBoard[source] = 0;
     }
 
-    public void moveFromTo_v2(int source, int to, boolean opponent) {
-        int vect = getDirectionFromVector(to - source);
-        int it = source;
-
-        System.err.println("vect: " + vect);
-
-        while(it != to) {
-            System.out.println("Moving over: " + it);
-            //returning false here could potentially break gameboard
-            if(opponent) {
-                if(gameBoard[it] == 1 || gameBoard[it] == 3) opponentJumpedOver.add(it);
-            } else {
-                if(gameBoard[it] == 2 || gameBoard[it] == 4) jumpedOver.add(it);
-            }
-
-            gameBoard[it] = 0;
-
-            it += vect;
-        }
-    }
-
 
     /**
      * Fills array list with possible move locations. Recursively!
@@ -169,71 +147,6 @@ public class Game {
                     getPossibleMoves(ret, positions, true, originalPosition, -9);
                 } else {
                     if(!onlyOver) positions.add(ret);
-                }
-            }
-        }
-    }
-
-    public void getPossibleMoves_v2(int indexPosition, ArrayList<Integer> positions,
-                                    int bannedVect, int originalPosition) {
-        int start, target;
-        boolean isKing;
-        int[] dirVectors = {-7, -9, 7, 9};
-        ArrayList<Integer> temp = new ArrayList<>();
-        boolean willJumpOver = false;
-
-        if(gameBoard[originalPosition] == 3) {
-            isKing = true;
-        } else if(gameBoard[originalPosition] == 1) {
-            isKing = false;
-        } else {
-            System.err.println("Somehow player tried to get moves for field without his stone");
-            return;
-        }
-
-        if(isKing) {
-            for(int i = 0; i < 4; i++) {
-                //-dir from bannedVect!!! (bannedVect is actual move vector, and stone can't move in opposite direction)
-                if(dirVectors[i] == -getDirectionFromVector(bannedVect)) continue;
-
-                start = indexPosition;
-
-                //longest row is 8, but lets just give 2 more for sure :)
-                for(int j = 0; j < 10; j++) { //for is used so the program can't get hung up on an infinite while
-                    target = getDirectionTarget(start, dirVectors[i]);
-
-                    if (target == -1) {
-                        if(willJumpOver) {
-                            positions.addAll(temp);
-                            willJumpOver = false;
-                        }
-                        temp.clear();
-
-                        break;
-                    }
-
-                    if(indexPosition != originalPosition) {
-                        if(Math.abs(target - start) > 9) {
-                            willJumpOver = true; // >9 means the move is over stone
-                            temp.add(target);
-                        }
-                    } else {
-                        positions.add(target);
-                    }
-
-                    start = target;
-                }
-            }
-        } else {
-            for(int i = 0; i < 2; i++) {
-                target = getDirectionTarget(indexPosition, dirVectors[i]);
-
-                if(target != -1) {
-                    if(indexPosition != originalPosition) {
-                        if(Math.abs(target - indexPosition) > 9) positions.add(target);
-                    } else {
-                        positions.add(target);
-                    }
                 }
             }
         }
@@ -322,17 +235,6 @@ public class Game {
      * @return true/ false
      */
     public boolean canMoveAgain(int from, int to) {
-//        int dir = getDirectionFromVector((to - from));
-//
-//        System.err.println("from " + from + " to " + to + " is dir " + dir);
-//        System.err.println(("which is " + ((to - from) / dir) + "times"));
-//
-//        for(int i = 0; i < ((to - from) / dir); i++) {
-////            if(gameBoard[from + (to - from) * i] % 2 == 0) return true;       //yeah... % doesn't work 0 % 2 is true
-//            if(gameBoard[from + dir * i] == 2 || gameBoard[from + dir * i] == 4 ) return true;
-//        }
-//
-//        return false;
         return (to - from) == 2 * -7 || (to - from) == 2 * -9 || (to - from == 2 * 7 || (to - from) == 2 * 9);
     }
 

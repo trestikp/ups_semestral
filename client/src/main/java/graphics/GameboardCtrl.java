@@ -40,9 +40,6 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
     /** Red stone image used to generate ImageViews (Image is 2000x2000 px takes long to load) */
     private final Image blueKing = new Image(getClass().getResource("/img/blue_king_piece.png").toString());
 
-    private int firstClick;
-
-
     // Status bar elements
     public Ellipse clientConnectCircle;
     public Label responseLabel;
@@ -228,20 +225,6 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
     private void highlightMoves(int paneID) {
         ArrayList<Integer> hl = new ArrayList<>();
         client.getGame().getPossibleMoves(paneID, hl, false, paneID, 0);
-//        client.getGame().getPossibleMoves_v2(paneID, hl, 0, paneID);
-
-//        if(!hl.isEmpty()) {
-//            for(int i : hl) {
-//                getPaneWithID(i).setStyle("-fx-background-color: #00FF00");
-//                getPaneWithID(i).setOnMouseClicked(event -> {
-//                    clickedHL(paneID, i);
-//                });
-//
-//                highlightedPanes.add(i);
-//            }
-//        } else {
-////            System.out.println("HIGHLIGHT LIST IS NULL");
-//        }
         
         if(!hl.isEmpty()) {
             for(int i : hl) {
@@ -272,7 +255,6 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
 
         if(moveSequence.isEmpty()) {
             moveSequence.addFirst(source);
-            firstClick = source;
 
             unsetImageViewEventsExceptID(client.getGame().getPlayerStoneIndexes(), source);
         }
@@ -280,22 +262,6 @@ public class GameboardCtrl extends OverlordCtrl implements CtrlNecessities {
         moveSequence.addLast(clicked);
 
         movePiece(source, clicked);
-
-        //blah
-//        highlightedPanes.clear();
-//
-//        ArrayList<Integer> plsWork = new ArrayList<>();
-//        client.getGame().getPossibleMoves_v2(clicked, plsWork, (clicked - source), firstClick);
-//
-//        for(int i : plsWork) {
-//            getPaneWithID(i).setStyle("-fx-background-color: #00FF00");
-//            getPaneWithID(i).setOnMouseClicked(event -> {
-//                clickedHL(clicked, i);
-//            });
-//
-//            highlightedPanes.add(i);
-//        }
-        //blah
 
         if(client.getGame().canMoveAgain(source, clicked) && !highlightedPanes.isEmpty()) {
 //            System.out.println("more moves to make");

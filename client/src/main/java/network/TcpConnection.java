@@ -3,9 +3,6 @@ package network;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketOption;
-
-import static java.net.SocketOptions.SO_REUSEADDR;
 
 public class TcpConnection {
     private Socket soc;

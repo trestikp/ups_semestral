@@ -19,20 +19,6 @@ public enum Action {
     LOSE        ("lose"             , 12),
     END         ("end"              , 13),
     OPP_TURN    ("opponent_turn"    , 14);
-//    CONNECT         ("connect"              , 0),
-//    //REJECT          ("reject_connection"    , 1),
-//    QUEUE           ("queue"                , 1),
-//    START           ("play"                 , 2),
-//    TURN            ("turn"                 , 3),
-//    PAUSE           ("pause"                , 4),
-//    RESUME          ("resume"               , 5),
-//    WAIT            ("wait"                 , 6),
-//    LOSS            ("connection loss"      , 7),
-//    RECONNECT       ("reconnect"            , 8),
-//    END             ("end"                  , 9),
-//    DISCONNECT      ("disconnect"           , 10);
-//    //ERROR           ("error"                , 8);
-
 
     private final String name;
     private final int code;

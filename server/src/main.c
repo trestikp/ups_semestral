@@ -1,7 +1,9 @@
 #include "logger.h"
 #include "network/server.h"
+
 #include <string.h>
 #include <signal.h>
+#include <limits.h>
 
 
 /** Server ip  */
@@ -23,6 +25,20 @@ void print_help() {
 	printf("-c NUM\n\tServer allows a maximum of NUM connections.\n");
 }
 
+int parse_string_to_int_main(char* str) {
+	int res;
+	char* leftover;
+
+	res = strtol(str, &leftover, 10);
+
+	if(leftover == str || res < 0 || *leftover != '\0') {
+		printf("Failed to parse ID\n");
+		return INT_MIN;
+	}
+
+	return res;
+}
+
 /**
 	Parses command line argument
 */
@@ -35,16 +51,17 @@ int process_argument(char* sw, char* val) {
 	if(!strcmp(sw, "-a")) {
 		ip = val;
 	} else if(!strcmp(sw, "-p")) {
-		port = strtol(val, NULL, 10);
+		port = parse_string_to_int_main(val);
 
-		if(port < 0 || port > 65536) {
+		if(port < 0 || port > 65536 || port == INT_MIN) {
 			printf("Port is expected to be a number from 0 to 65536\n");
 			return 1;
 		}
 	} else if(!strcmp(sw, "-c")) {
-		max_con = strtol(val, NULL, 10);
+		//max_con = strtol(val, NULL, 10);
+		max_con = parse_string_to_int_main(val);
 			
-		if(max_con < 2 || max_con > 100) {
+		if(max_con < 2 || max_con > 100 || max_con == INT_MIN) {
 			printf("Server allows between 2 and 100 connectinos\n");
 			return 1;
 		}
@@ -61,6 +78,12 @@ int process_argument(char* sw, char* val) {
 */
 int parse_arguments(int argc, char *argv[]) {
 	int i = 0;
+
+	if(argc == 2) {
+		if(strcmp(argv[i], "-h")) {
+			return 1;
+		}
+	}
 
 	for(i = 1; i < argc; i++) {
 		if(!strcmp(argv[i], "-h")) {
@@ -145,10 +168,6 @@ int main(int argc, char *argv[]) {
 	init_defaults();
 
 	run();
-	//establish_server();
-	//run_server();
-
-	//while(1);
 
 	return 0;
 }

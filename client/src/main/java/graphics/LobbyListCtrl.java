@@ -3,7 +3,6 @@ package graphics;
 import game.Action;
 import game.Client;
 import javafx.event.ActionEvent;
-import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;

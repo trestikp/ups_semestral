@@ -40,7 +40,7 @@ public class Handler {
 
         Parent root = loader.load();
 
-        primaryStage.setTitle("Checkers");
+        primaryStage.setTitle("Draughts");
         primaryStage.setScene(new Scene(root, 1280, 720));
         primaryStage.show();
     }

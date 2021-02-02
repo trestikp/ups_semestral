@@ -16,16 +16,6 @@ int add_lifo(l_link **head, void *data) {
 	new->next = *head;
 	*head = new;
 
-	/*
-	if(*head) {
-		new->next = *head;
-		*head = new;
-	} else {
-		new->next = NULL;
-		*head = new;
-	}
-	*/
-
         return 0;
 }
 

@@ -50,8 +50,8 @@
   }}
 \def\@makeschapterhead#1{%
   {\parindent \z@ \raggedright \normalfont
-    \interlinepenalty\@M
-    \Huge \bfseries  #1\par\nobreak
+    \interlinepenalty\@m
+    \huge \bfseries  #1\par\nobreak
     \vskip 40\p@
   }}
 \makeatother
@@ -64,21 +64,21 @@
 \centerline{\includegraphics[width=10cm]{img/logo.jpg}}
 \begin{center}
 \vspace{30px}
-{\Huge
-\textbf{Úvod do počítačových sítí}\\
-\textbf{Hra: Dáma (anglická verze)}\\
+{\huge
+\textbf{úvod do počítačových sítí}\\
+\textbf{hra: dáma (anglická verze)}\\
 \vspace{1cm}
 }
-{\Large
-\textbf{KIV/UPS}\\
+{\large
+\textbf{kiv/ups}\\
 \vspace{1cm}
 }
 \vspace{1cm}
 {\large
-Pavel Třeštík\\
+pavel třeštík\\
 }
 {\normalsize
-A17B0380P
+a17b0380p
 }
 \end{center}
 \vspace{\fill}
@@ -95,57 +95,91 @@ A17B0380P
 
 
 
-\chapter{Popis hry Dáma (anglická verze)}
-Jako téma semestrální práce jsem si zvolil hru Dáma. Zvolil jsem takzvanou Anglickou verzi. Tedy
+\chapter{popis hry dáma (anglická verze)}
+jako téma semestrální práce jsem si zvolil hru dáma. zvolil jsem takzvanou anglickou dámu. tedy
 hra se hraje na šachovnici s 64mi poli a vyhrává ten hráč, který první sebere všechny
-kameny protivníka. Hráči mají kameny na černých polích šachovnice a smí se pohybovat pouze
-diagonálně, tedy pouze po černých polích. Kamenů jsou dva druhy: pěšák a král. Rozdíl mezi
-klasickou verzí Dámy a Anglickou Dámou je, že v anglické verzi král (česky označován jako dáma),
-smí všemi směry, ale stejně jako pěšák pouze o jedno políčko. Mezitím v klasické verzi
-král (dáma) může všemi směry a skočit lobovlný počet polí.
+kameny protivníka. hráči mají kameny na černých polích šachovnice a smí se pohybovat pouze
+diagonálně, tedy pouze po černých polích. kamenů jsou dva druhy: pěšák a král. rozdíl mezi
+klasickou verzí dámy a anglickou dámou je, že v anglické verzi král (česky označován jako dáma),
+smí všemi směry, ale stejně jako pěšák pouze o jedno políčko. mezitím v klasické verzi
+král (dáma) může všemi směry a skočit libovolný počet polí.
 
-\section{Pohyb}
-Pěšák smí pouze o jedno políčko v před. Král (dáma) smí o jedno políčko všemi směry. Tah hráče
+\section{pohyb}
+pěšák smí pouze o jedno políčko v před. král (dáma) smí o jedno políčko všemi směry. tah hráče
 končí po posunutí kamene.
 
-TODO obrazek tahu
+\begin{figure}[H]
+  \centering
+  \begin{minipage}[b]{0.4\textwidth}
+    \includegraphics[width=\textwidth]{img/move_a.png}
+    \caption{Zvýraznění tahu}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[b]{0.4\textwidth}
+    \includegraphics[width=\textwidth]{img/move_b.png}
+    \caption{Po tahu}
+  \end{minipage}
+\end{figure}
 
 \section{Braní kamenů protivníka}
 Pokud v cestě ku předu stojí kámen protivníka a je za ním prázdné políčko, tak jak král, tak pěšák 
 přeskočí kámen protivníka na políčko za něj a kámen protivníka odstraní. Stále platí, že
 pěšák smí brát pouze ku před, zatímco král může brát všemi směry.
 
-TODO obrazek zrani
+\begin{figure}[H]
+  \centering
+  \begin{minipage}[b]{0.4\textwidth}
+    \includegraphics[width=\textwidth]{img/take_a.png}
+    \caption{Sebrání protivníkova kamene}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[b]{0.4\textwidth}
+    \includegraphics[width=\textwidth]{img/take_b.png}
+    \caption{Po provedení tahu}
+  \end{minipage}
+\end{figure}
 
 \section{Pohyb}
 Pokud po tom, co hráč vzal protivníkův kámen, je v cestě další protivníkův kámen, za kterým
-je volné místo, hráč táhne znovu a vezme tím tak 2 protívníkovy kameny v jednom tahu. Toto
-je možné opakovat pokud je splněna ta podmínka, že v blízkosti kamene je protivníkův kámen
+je volné místo, hráč táhne znovu a vezme tím tak 2 protivníkovy kameny v jednom tahu. Toto
+je možné opakovat dokud je splněna ta podmínka, že v blízkosti kamene je protivníkův kámen
 a za ním je volné políčko. Tedy hráč může vykonat další tah, pokud během dalšího tahu sebere
 kámen protivníka.
 
-TODO: obrazek retezoveho brani
+\begin{figure}[H]
+  \centering
+  \begin{minipage}[b]{0.4\textwidth}
+    \includegraphics[width=\textwidth]{img/chain_take_a.png}
+    \caption{Řetězové braní dvou kamenů}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[b]{0.4\textwidth}
+    \includegraphics[width=\textwidth]{img/chain_take_b.png}
+    \caption{Po provedení tahu}
+  \end{minipage}
+\end{figure}
 %
 %
 %
 \chapter{Popis protokolu}
-Protokol je posílán jako nešifrovaný text. Jednotlivé části jsou oddělené znakem '$|$'.
+Protokol je posílán jako nešifrovaný text. Jednotlivé části jsou oddělené znakem '$|$'. Zpráva
+je ukončena znakem '\textbackslash n'.
 %
 %
 \section{Obecný tvar zpráv}
 Obecný tvar zprávy je:
 \begin{itemize}
-	\item ID\_hráče$|$INSTRUKCE$|$parameter$|$parametr...
+	\item ID\_hráče$|$INSTRUKCE$|$parametr$|$parametr...
 \end{itemize}
 
 \noindent Obecný tvar odpovědi serveru je: 
 
 \begin{itemize}
-	\item ID\_hráče$|$VYSLEDEK$|$kód\_výsledku$|$zpráva$|$parameter$|$parametr...
+	\item ID\_hráče$|$VYSLEDEK$|$kód\_výsledku$|$zpráva$|$parametr$|$parametr...
 \end{itemize}
 
 
-\noindent VYSLEDEK nabývá hodnok "OK" a "ERROR", lze ho považovat za typ instrukce.
+\noindent VYSLEDEK nabývá hodnot "OK" a "ERROR", lze ho považovat za typ instrukce.
 %
 %
 \section{Tabulka instrukcí a stavový diagram protokolu}
@@ -154,18 +188,18 @@ Obecný tvar zprávy je:
 \begin{tabularx}{\textwidth}{|c|X|}
 \hline
 \textbf{Instrukce}      & \textbf{Popis}                                                                                                                                          \\ \hline
-\textbf{CONNECT}        & Požadavek na vytvoření hráče. Očekávána jako první instrukce komunikace. Server odpojí kterékoliv připojení, které jako první instrukci nepošle connect \\ \hline
+\textbf{CONNECT}        & Požadavek na vytvoření hráče. Očekávána jako první instrukce komunikace. Server odpojí kterékoliv připojení, které jako první instrukci nepošle CONNECT \\ \hline
 \textbf{LOBBY}          & Požadavek pro získání seznamu hracích místností, které jsou dostupné k připojení.                                                                       \\ \hline
 \textbf{CREATE\_LOBBY}  & Požadavek na vytvoření nové herní místnosti.                                                                                                            \\ \hline
 \textbf{DELETE\_LOBBY}  & Požadavek o zrušení existující herní místnosti.                                                                                                         \\ \hline
 \textbf{JOIN\_GAME}     & Požadavek na připojení k zvolené herní místnosti.                                                                                                       \\ \hline
 \textbf{TURN}           & Požadavek na provedení tahu.                                                                                                                            \\ \hline
 \textbf{DISCONNECT}     & Požadavek na odpojení spojení.                                                                                                                          \\ \hline
-\textbf{PING}           & Ping slouží k urdžení stávající komunikace. Server na PING také odpovídá instrukcí PING.                                                                \\ \hline
+\textbf{PING}           & Ping slouží k udržení stávající komunikace. Server na PING také odpovídá instrukcí PING.                                                                \\ \hline
 \textbf{OPPONENT\_JOIN} & Instrukce serveru informující protivníka hráče, který zaslal požadavek o připojení protihráče.                                                          \\ \hline
-\textbf{OPPONENT\_DISC} & Instrukce server informující protivníka hráče o protivníkově ztrátě připojení.                                                                          \\ \hline
-\textbf{OPPONENT\_TURN} & Instrukce server informující protivníka hráče o tahu provedeným hráčem.                                                                                 \\ \hline
-\textbf{OPPONENT\_RECO} & Instrukce informující protivníka hráče o uspěšné znovu připojení hráče do hry.                                                                          \\ \hline
+\textbf{OPPONENT\_DISC} & Instrukce serveru informující protivníka hráče o protivníkově ztrátě připojení.                                                                          \\ \hline
+\textbf{OPPONENT\_TURN} & Instrukce serveru informující protivníka hráče o tahu provedeným hráčem.                                                                                 \\ \hline
+\textbf{OPPONENT\_RECO} & Instrukce informující protivníka hráče o úspěšné znovu připojení hráče do hry.                                                                          \\ \hline
 \textbf{OPPONENT\_LEFT} & Instrukce informující hráče o protivníkově permanentní ztrátě připojení a ukončení probíhající hry.                                                     \\ \hline
 \end{tabularx}
 	\caption{Tabulka instrukcí a popisů}
@@ -195,7 +229,9 @@ Obecný tvar zprávy je:
 \subsection{Instrukce: CONNECT}
 \subsubsection{Popis}
 Připojí hráče k serveru. Pokud první zpráva od nového připojení není CONNECT,
-tak server připojení odpojí. Při zadání ID hráče slouží k znovu připojení k serveru.\\
+tak server spojení odpojí. Při zadání ID hráče slouží k znovu připojení k serveru.
+Při znovu připojování k serveru, server posílá dodatečné informace nutné k obnovení
+klienta do stavu před ztrátou připojení.
 
 \subsubsection{Přesné formáty}
 \begin{itemize}
@@ -214,7 +250,14 @@ tak server připojení odpojí. Při zadání ID hráče slouží k znovu připo
 	\item Pozitivní
 		\begin{itemize}
 			\item 201 - Connection success
-			\item 202 - Reconnection success
+			\item 202 - Reconnection success$|$state
+			\item 202 - Reconnection success$|$state$|$board$|$on\_top$|$opponent\_name
+				\begin{itemize}
+					\item state - stav hráče na serveru (connected, turn, opponent\_turn)
+					\item board - hrací pole (pouze černé pole - délka 32 znaků)
+					\item on\_top - jestli má hráč červené/ modré kameny (0 = modré, 1 = červené)
+					\item opponent\_name - jméno protivníka
+				\end{itemize}
 		\end{itemize}
 	\item Negativní
 		\begin{itemize}
@@ -235,7 +278,7 @@ tak server připojení odpojí. Při zadání ID hráče slouží k znovu připo
 \subsection{Instrukce: CREATE\_LOBBY}
 \subsubsection{Popis}
 Vytvoří nové lobby a přidá hráče, který ho vytvořil, jako hráč 1. Hráč 1 má vždy
-bílé (v mé verzi modré) kámeny.
+bílé (v mé verzi modré) kameny.
 
 \subsubsection{Přesný formát}
 \begin{itemize}
@@ -266,8 +309,8 @@ bílé (v mé verzi modré) kámeny.
 %
 \subsection{Instrukce: JOIN\_GAME}
 \subsubsection{Popis}
-Připojí hráče do existující místnosti. Připojené hráče nastaví jako hráč 2, který má
-černé kameny. Převede stav hry na stav probíhající.
+Připojí hráče do existující místnosti. Připojeného hráče nastaví jako hráč 2, který má
+černé (v mé verzi červené) kameny. Místnost, do které se hráč připojil je odstartována.
 
 \subsubsection{Přesný formát}
 \begin{itemize}
@@ -298,7 +341,9 @@ Připojí hráče do existující místnosti. Připojené hráče nastaví jako 
 %
 \subsection{Instrukce: DELETE\_LOBBY}
 \subsubsection{Popis}
-Zruší vytvořené lobby, pokud v něm je pouze zakladatel lobby.
+Zruší vytvořené lobby, pokud v něm je pouze zakladatel lobby (teoreticky nemůže
+existovat lobby s více hráči než 1, protože hra je automaticky odstartována po
+připojení druhého hráče).
 
 \subsubsection{Přesný formát}
 \begin{itemize}
@@ -323,7 +368,7 @@ Zruší vytvořené lobby, pokud v něm je pouze zakladatel lobby.
 %
 \subsection{Instrukce: LOBBY}
 \subsubsection{Popis}
-Požadavek uživatele na získání lobby, dostupných k připojení.
+Požadavek uživatele na získání místností dostupných k připojení.
 
 \subsubsection{Přesný formát}
 \begin{itemize}
@@ -334,7 +379,7 @@ Požadavek uživatele na získání lobby, dostupných k připojení.
 \begin{itemize}
 	\item Pozitivní
 		\begin{itemize}
-			\item 201 - Available lobbies
+			\item 201 - Available lobbies$|$lobby\_name\_1$|$...
 		\end{itemize}
 	\item Negativní
 		\begin{itemize}
@@ -351,10 +396,11 @@ Provede tah nebo sekvenci tahů. Kontaktuje protivníka o hráčovo tazích.
 
 \subsubsection{Přesný formát}
 \begin{itemize}
-	\item ID\_hráče$|$TURN$|$paramter\_1$|$parametr\_2$|$...$|$parameter\_30
+	\item ID\_hráče$|$TURN$|$parametr\_1$|$parametr\_2$|$...$|$parametr\_30
 		\begin{itemize}
-			\item parametr\_1 - pozice kamene
+			\item parametr\_1 - index (pozice) kamene
 			\item parametr\_x - index (pozice) cíle tahu
+					  - index nabývá hodnot 0-63
 		\end{itemize}
 \end{itemize}
 
@@ -401,7 +447,7 @@ přišel požadavek.
 		\end{itemize}
 	\item Negativní
 		\begin{itemize}
-			\item - nemá negativní odpovědi. Vždy zavře připojení, z kterého přišel požadavek.
+			\item nemá negativní odpovědi. Vždy zavře připojení, z kterého přišel požadavek.
 		\end{itemize}
 \end{itemize}
 %
@@ -414,7 +460,7 @@ informující ho o připojení protivníka.
 
 \subsubsection{Přesný formát}
 \begin{itemize}
-	\item ID\_protivníka$|$OPPONENT\_JOIN$|$kód$|$zpárva$|$username
+	\item ID\_protivníka$|$OPPONENT\_JOIN$|$kód$|$zpráva$|$username
 		\begin{itemize}
 			\item kód - jedná se o zprávu serveru, takže klient očekává kód operace
 			\item zpráva - podobně jako kód je očekávána klientem
@@ -443,7 +489,12 @@ Pošle protivníkovi klientův tah.
 
 \subsubsection{Přesný formát}
 \begin{itemize}
-	\item ID\_hráče$|$OPPONENT\_TURN$|$kód$|$zpárva$|$parametr\_1$|$parametr\_2$|$...
+	\item ID\_hráče$|$OPPONENT\_TURN$|$kód$|$zpráva$|$parametr\_1$|$parametr\_2$|$...
+	\begin{itemize}
+			\item kód, zpráva - viz předchozí
+			\item parametr\_x - stejně jako u TURN, index v intervalu 0-63
+	\end{itemize}
+
 \end{itemize}
 
 \subsubsection{Kódy a zprávy}
@@ -464,7 +515,10 @@ Informuje hráče o protivníkově odpojení.
 
 \subsubsection{Přesný formát}
 \begin{itemize}
-	\item ID\_hráče$|$OPPONENT\_DISC$|$kód$|$zpárva
+	\item ID\_hráče$|$OPPONENT\_DISC$|$kód$|$zpráva
+		\begin{itemize}
+				\item kód, zpráva - viz instrukce OPPONENT\_JOIN
+		\end{itemize}
 \end{itemize}
 
 \subsubsection{Kódy a zprávy}
@@ -483,7 +537,10 @@ Informuje hráče o protivníkově znovu připojení.
 
 \subsubsection{Přesný formát}
 \begin{itemize}
-	\item ID\_hráče$|$OPPONENT\_RECO$|$kód$|$zpárva
+	\item ID\_hráče$|$OPPONENT\_RECO$|$kód$|$zpráva
+		\begin{itemize}
+				\item kód, zpráva - viz instrukce OPPONENT\_JOIN
+		\end{itemize}
 \end{itemize}
 
 \subsubsection{Kódy a zprávy}
@@ -502,7 +559,10 @@ Slouží k informování protivníka o permanentním ukončení protivníkovo sp
 
 \subsubsection{Přesný formát}
 \begin{itemize}
-	\item ID\_hráče$|$OPPONENT\_RECO$|$kód$|$zpárva
+	\item ID\_hráče$|$OPPONENT\_RECO$|$kód$|$zpráva
+		\begin{itemize}
+				\item kód, zpráva - viz instrukce OPPONENT\_JOIN
+		\end{itemize}
 \end{itemize}
 
 \subsubsection{Kódy a zprávy}
@@ -559,7 +619,7 @@ Java JDK. Ovšem pro verzi Java 11 už je JavaFX samostatnou knihovnou.
 \end{figure}
 
 V adresáři \texttt{java} se nachází podadresáře \texttt{game, graphics, network}. 
-V adresáři \texttt{game} se nachází logika hry a funkce obsluhíjí komunikaci se serverem.
+V adresáři \texttt{game} se nachází logika hry a funkce obsluhují komunikaci se serverem.
 Adresář \texttt{network} obsahuje třídy starající se o navázání spojení a posílání/ přijímání
 dat a jejich parsování. Adresář graphics obsahuje grafické ovladače k souborům s příponou .fxml,
 které se nacházejí v \texttt{resources/fxml\_res}.
@@ -584,7 +644,7 @@ Server se pouští voláním \textbf{run\_server}. Při spuštění je možné p
 	\item -c NUM - povoluje maximálně NUM počet současných spojení na serveru.
 \end{itemize}
 
-Tyto parametry jsou na sobě nezávislé a mouhou být použity v libovolném pořadí. Pokud některý parametr
+Tyto parametry jsou na sobě nezávislé a mohou být použity v libovolném pořadí. Pokud některý parametr
 není použit, je použita jeho výchozí hodnota.
 Výchozí hodnoty:
 \begin{itemize}
@@ -596,21 +656,30 @@ Výchozí hodnoty:
 \section{Klient}
 Klienta je možné spustit na platformách Linux a Windows. Je psán v Java 11 a překládán pomocí gradle.
 \subsection{Překlad}
-Aplikace k přeložení používá gradle wrapper, který má závislost na Java. Aplikace je také psána v Java,
-proto uživateli doporučuji nainstalovat \textbf{Open JDK 11.0.1}. Závislost je vyžadována a bez jejího
-splnění není možné aplikaci přeložit.
+Aplikace k přeložení používá gradle wrapper, který má závislost na Java. Aplikace je také psána v jazyce 
+Java a proto je po uživateli požadováno nainstalovat JDK. Doporučuji nainstalovat 
+\textbf{Oracle SE Development Kit 11.0.10}, který je dostupný pro Windows i Linux.
 
 K aplikace je poskytnutý gradle wrapper, který umožňuje téměř automatické přeložení aplikace.
 Uživateli stačí pouze v příkazovém řádku zavolat příkaz \textbf{gradlew build} v kořenovém adresáři
 klienta (kde se nachází soubor \texttt{gradlew} a \texttt{gradlew.bat}).
 %
 \subsection{Spuštění}
-Po přikazu \textbf{gradlew build} se v kořenovém adresáři klienta vytvoří adresář \texttt{build},
+Po příkazu \textbf{gradlew build} se v kořenovém adresáři klienta vytvoří adresář \texttt{build},
 v něm podadresář \texttt{libs} a v tomto podadresáři soubor \texttt{client.jar} 
 (výsledná cesta tedy je \texttt{build/libs/client.jar}). Tento soubor je možné spustit z příkazové řádky
 pomocí \texttt{java -jar jmeno\_souboru}. A nebo na systému Windows dvojitým poklepáním na tento soubor, za
 předpokladu, že systém má nastavenou systémovou proměnou pro spuštění Java 11.
 %
 \chapter{Závěr}
+Obě aplikace splňují hlavní body zadání a jsou stabilní. Není tedy možné je shodit nesprávnou komunikací.
+Ovšem stále jsou věci, které se dají vylepšit.
+
+Například na straně serveru, jsou použité spojové seznamy, pro 
+uchovávání probíhajících her a připojených hráčů. Tyto struktury, ale nejsou velmi efektivní při hledání jednoho
+konkrétního prvku v seznamu, což je akce, kterou server dělá velmi často. Není tedy od věci zvážit, jak by si
+výkonnostně vedla například struktura Binary Search Tree.
+
+U klienta by bylo možné vylepšit celkový vzhled grafického rozhraní, který má výchozí vzhled Java FX komponent.
 
 \end{document}
