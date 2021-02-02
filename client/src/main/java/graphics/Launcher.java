@@ -3,10 +3,8 @@ package graphics;
 import javafx.application.Application;
 import javafx.stage.Stage;
 
-//TODO: --module-path="/usr/lib/jvm/javafx-sdk-11.0.2/lib" --add-modules=javafx.control
-
 /**
- * Starting class of the application. Creates an instance of Handler class
+ * Was supposed to be starting class, but doesn't work from jar due to it extending Application
  */
 public class Launcher extends Application {
 
@@ -15,7 +13,7 @@ public class Launcher extends Application {
         Handler h = new Handler(primaryStage);
     }
 
-    public static void main(String[] args) {
+    public static void launch_gui(String[] args) {
         launch(args);
     }
 }

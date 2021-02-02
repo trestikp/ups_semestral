@@ -565,6 +565,51 @@ dat a jejich parsování. Adresář graphics obsahuje grafické ovladače k soub
 které se nacházejí v \texttt{resources/fxml\_res}.
 %
 \chapter{Uživatelská dokumentace}
+\section{Server}
+U serveru je předpokládáno, že bude spuštěn na platformě Linux. Server je konzolová aplikace. Překládá
+a spouští se z terminálu.
+%
+\subsection{Překlad}
+Server se překládá pomocí 
+poskytnutého \texttt{makefile}. V adresáři serveru, kde se nachází \texttt{makefile} stačí
+pouze zavolat příkaz \textbf{make} a zdrojové soubory jsou přeloženy překladačem \textbf{gcc}
+a vytvoří se spustitelný soubor \textbf{run\_server}.
+%
+\subsection{Spuštění}
+Server se pouští voláním \textbf{run\_server}. Při spuštění je možné použít několik volitelných parametrů.
+\begin{itemize}
+	\item -h - vypíše nápovědu k parametrům
+	\item -a IP - pokusí se vytvořit a spustit socket s adresou IP.
+	\item -p PORT - pokusí se vytvořit a spustit socket s portem PORT.
+	\item -c NUM - povoluje maximálně NUM počet současných spojení na serveru.
+\end{itemize}
+
+Tyto parametry jsou na sobě nezávislé a mouhou být použity v libovolném pořadí. Pokud některý parametr
+není použit, je použita jeho výchozí hodnota.
+Výchozí hodnoty:
+\begin{itemize}
+	\item IP - 127.0.0.1
+	\item PORT - 61116
+	\item NUM - 50
+\end{itemize}
+%
+\section{Klient}
+Klienta je možné spustit na platformách Linux a Windows. Je psán v Java 11 a překládán pomocí gradle.
+\subsection{Překlad}
+Aplikace k přeložení používá gradle wrapper, který má závislost na Java. Aplikace je také psána v Java,
+proto uživateli doporučuji nainstalovat \textbf{Open JDK 11.0.1}. Závislost je vyžadována a bez jejího
+splnění není možné aplikaci přeložit.
+
+K aplikace je poskytnutý gradle wrapper, který umožňuje téměř automatické přeložení aplikace.
+Uživateli stačí pouze v příkazovém řádku zavolat příkaz \textbf{gradlew build} v kořenovém adresáři
+klienta (kde se nachází soubor \texttt{gradlew} a \texttt{gradlew.bat}).
+%
+\subsection{Spuštění}
+Po přikazu \textbf{gradlew build} se v kořenovém adresáři klienta vytvoří adresář \texttt{build},
+v něm podadresář \texttt{libs} a v tomto podadresáři soubor \texttt{client.jar} 
+(výsledná cesta tedy je \texttt{build/libs/client.jar}). Tento soubor je možné spustit z příkazové řádky
+pomocí \texttt{java -jar jmeno\_souboru}. A nebo na systému Windows dvojitým poklepáním na tento soubor, za
+předpokladu, že systém má nastavenou systémovou proměnou pro spuštění Java 11.
 %
 \chapter{Závěr}
 

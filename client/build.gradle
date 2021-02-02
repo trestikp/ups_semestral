@@ -4,32 +4,24 @@ plugins {
 }
 
 repositories {
-    jcenter()
     mavenCentral()
-}
-
-dependencies {
-    implementation 'com.google.guava:guava:29.0-jre'
-    testImplementation 'junit:junit:4.13'
+    //jcenter()
 }
 
 javafx {
     version = "11.0.1"
-    modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.graphics' ]
+    modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.graphics' ] //graphics should be included in controls..
+    //modules = [ 'javafx.controls', 'javafx.fxml' ]
 }
 
-mainClassName = 'graphics.Launcher'
+mainClassName = 'Main'
 
-/*
 jar {
     manifest {
-        //attributes 'Main-Class': 'main.java.graphics.Launcher'
-        attributes 'Main-Class': 'graphics.Launcher'
+        attributes 'Main-Class': "$mainClassName"
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
 
-application {
-    //mainClassName = 'main.java.graphics.Launcher'
-    mainClassName = 'graphics.Launcher'
-}
-*/
