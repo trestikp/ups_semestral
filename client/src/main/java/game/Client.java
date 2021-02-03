@@ -498,6 +498,7 @@ public class Client implements Runnable {
         } else if(msg.getInst() == Instruction.OPPONENT_LEFT) {                                         //OPPONENT_LEFT
             opponentConnected = false;
             opponentName = null;
+            auto.setGameState(State.CONNECTED);
 
             Platform.runLater(() -> {
                 currentCtrl.genericSetScene("main_menu_connected.fxml");
