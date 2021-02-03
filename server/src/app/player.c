@@ -72,6 +72,8 @@ int delete_player_with_id(l_link **head, int id) {
 	l_link *prev = NULL;
 	l_link *temp = *head;
 
+	if(!temp) return 1;
+
 	while(temp) {
 		if(((player*) temp->data)->id == id) {
 			free_player((player*) temp->data);

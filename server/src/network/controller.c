@@ -426,10 +426,15 @@ char* connect_my(int* player_id, char* username, int fd) {
 			//would be done regardless, so there is no reason to check for p->busy
 			g = find_players_game(p);
 
-			if(!g) append_parameter(&msg, "connected"); //no game
+			if(!g) {
+				append_parameter(&msg, "connected"); //no game
+				set_state(&(p->at), C_CONNECTED);
+			}
 			else if(!g->on_turn) { //no opponent = was waiting for opponent
 				delete_game_from_list(&g_lobby, g);
 				append_parameter(&msg, "connected");
+
+				set_state(&(p->at), C_CONNECTED);
 			} else { //has game, has opponent
 				player* opponent = get_your_opponent(g, p);
 				char* op_msg = construct_message_with_inst(opponent->id, inst_string[OPPONENT_RECO],
@@ -469,6 +474,9 @@ char* connect_my(int* player_id, char* username, int fd) {
 					append_parameter(&msg, temp);
 					append_parameter(&msg, opponent->username);
 				}
+
+				//this is probably unnecessary 
+				set_state(&(p->at), C_IN_GAME);
 			}
 
 			p->connected = 1;
@@ -479,7 +487,9 @@ char* connect_my(int* player_id, char* username, int fd) {
 
 			return msg;
 		} else { //could branch connected and id mismatch for more detailed response
-			printf("Player is either already connected or IDs don't match\n");
+			//printf("Player is either already connected or IDs don't match\n");
+			//if(p->connected != 0) printf("Player is already connected!\n");
+			//if(p->id != *player_id) printf("id %d mismatch %d\n", p->id, *player_id);
 			return construct_message(*player_id, 407, "Is this an attack attempt");
 		}
 	}
@@ -814,8 +824,26 @@ void check_for_disconnects(fd_set* clients) {
 					remove_disconnected_player(p);
 
 					player_count--;
-				}
+				} else {
+					if(p->at.state != C_CONNECTED) {
+						g = find_players_game(p);
 
+						if(g) {
+							player* opponent = get_your_opponent(g, p);
+
+							if(opponent && opponent->connected == 1 &&
+							   opponent->socket > 0) {
+								char* op_msg = construct_message_with_inst(g->p2->id,
+									inst_string[OPPONENT_DISC], 201, "Opponent disconnected");
+								int rv = send(opponent->socket, op_msg, strlen(op_msg), MSG_CONFIRM);
+
+								if(rv < 0) printf("Failed to contact opponent about disconnect\n");
+
+								free(op_msg);
+							}
+						}
+					}
+				}
 
 				continue;
 			}
@@ -832,7 +860,7 @@ void check_for_disconnects(fd_set* clients) {
 				}
 
 				if(!g) {
-					printf("ERROR: Player doesn't have game while they are busy\n");
+					printf("ERROR: Player doesn't have game while they should\n");
 				} else {
 					char* op_msg;
 					int rv = 0;

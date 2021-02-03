@@ -102,6 +102,8 @@ game* extract_game_by_name(l_link** head, char* lobby_name) {
 
 	curr = *head;
 
+	if(!curr) return NULL;
+
 	while(curr) {
 		if(!strcmp(((game*) curr->data)->gamename, lobby_name)) {
                         out = (game*) curr->data;

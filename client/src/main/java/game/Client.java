@@ -121,6 +121,13 @@ public class Client implements Runnable {
                     } else {
                         status.setResponseText("Failed to send request");
 
+                        Platform.runLater(() -> {
+                            if(currentCtrl instanceof GameboardCtrl) {
+                                ((GameboardCtrl) currentCtrl).resetMoveSequence();
+                                ((GameboardCtrl) currentCtrl).setImageViewEvents(game.getPlayerStoneIndexes());
+                            }
+                        });
+
                         inst = null;
                     }
                 }
@@ -374,8 +381,8 @@ public class Client implements Runnable {
      * @param reply server reply
      */
     private void handleRequest(TcpMessage reply) {
-        if(!CONNECTED && reply.getInst() != Instruction.CONNECT) {
-            System.out.println("Ahh unexpected server response on CONNECT");
+        if(!CONNECTED && inst != Instruction.CONNECT) {
+            System.out.println("Client not CONNECTED but handling inst that is not CONNECT");
         }
 
         switch (inst) {
@@ -645,11 +652,13 @@ public class Client implements Runnable {
 
         if(requestPar.isEmpty()) {
             status.setResponseText("No moves to send");
+            System.out.println("No moves to send");
             return false;
         }
 
         if(requestPar.size() > 30) {
             status.setResponseText("Too many moves to send");
+            System.out.println("Too many moves to send");
             return false;
         }
 
@@ -725,9 +734,13 @@ public class Client implements Runnable {
                     if(reply.getParams()[0].equals(State.TURN.getName())) auto.setGameState(State.TURN);
                     else auto.setGameState(State.OPPONENT_TURN);
 
+                    //client was restarted so game needs to be created again
                     if(game == null) {
-                        if(reply.getParams()[2].length() > 1) System.err.println("Expected 1 or 0, entered string is longer");
+                        if(reply.getParams()[2].length() > 1)
+                            System.err.println("Expected 1 or 0, entered string is longer");
+
                         char onTop = reply.getParams()[2].charAt(0);
+
                         if(Character.getNumericValue(onTop) == 1) {
                             game = new Game(PSColor.BLACK);
                         } else if(Character.getNumericValue(onTop) == 0) {
@@ -753,10 +766,10 @@ public class Client implements Runnable {
                         }
 
                         ((GameboardCtrl) currentCtrl).initStones();
-                        ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
-//                        if(auto.getGameState() == State.OPPONENT_TURN) {
-//                            ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
-//                        }
+//                        ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
+                        if(auto.getGameState() == State.OPPONENT_TURN) {
+                            ((GameboardCtrl) currentCtrl).unsetImageViewEvents(game.getPlayerStoneIndexes());
+                        }
 //                        game.printGameBoard();
                     });
                 } else {

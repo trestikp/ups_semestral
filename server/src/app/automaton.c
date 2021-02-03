@@ -25,3 +25,7 @@ int verify_transition(automaton* at, action act) {
 void make_transition(automaton* at, action act) {
 	at->state = transitions[at->state][act];
 }
+
+void set_state(automaton* at, state s) {
+	at->state = s;
+}
